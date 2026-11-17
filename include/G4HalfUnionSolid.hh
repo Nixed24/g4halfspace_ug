@@ -11,8 +11,7 @@
 
 class G4HalfUnionSolid : public G4HalfSolid
 {
-    std::vector<std::unique_ptr<G4HalfSolid>> intersectionSolids_;
-    std::vector<std::unique_ptr<G4HalfSolid>> subtractionSolids_;
+    std::vector<G4HalfSolid*> unionSolids_;
 
 protected:
     void GetOnSurfaceNormal(const G4ThreeVector& p, G4ThreeVector& norm) const override;
@@ -22,29 +21,12 @@ public:
     using G4HalfSolid::DistanceToOut;
 
     explicit G4HalfUnionSolid(const G4String& name = "G4HalfIntersectionSolid");
-    G4HalfUnionSolid(std::vector<std::unique_ptr<G4HalfSolid>> intersectionSolids,
-                            std::vector<std::unique_ptr<G4HalfSolid>> subtractionSolids,
-                            const G4String& name = "G4HalfIntersectionSolid");
+    G4HalfUnionSolid(const std::vector<G4HalfSolid*>& unionSolids,
+                    const G4String& name = "G4HalfIntersectionSolid");
 
-    template <typename Solid, typename... Args>
-    Solid& AddIntersectionSolid(Args&&... args) // Definition must go in the header or you get linker errors
-    {
-        auto solid = std::make_unique<Solid>(std::forward<Args>(args)...);
-        G4SolidStore::DeRegister(solid.get());
-        Solid& result = *solid;
-        intersectionSolids_.push_back(std::move(solid));
-        return result;
-    }
+    ~G4HalfUnionSolid() override;
 
-    template <typename Solid, typename... Args>
-    Solid& AddSubtractionSolid(Args&&... args)
-    {
-        auto solid = std::make_unique<Solid>(std::forward<Args>(args)...);
-        G4SolidStore::DeRegister(solid.get());
-        Solid& result = *solid;
-        subtractionSolids_.push_back(std::move(solid));
-        return result;
-    }
+    void AddUnionSolid(G4HalfSolid* unionSolid);
 
     // --- Inherited functions ---
     /*
