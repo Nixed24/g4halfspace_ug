@@ -23,6 +23,8 @@ public:
     G4ThreeVector SurfaceNormal(const G4ThreeVector& /*p*/) const override {return normal;}
 
     void Transform(const G4AffineTransform& t) override;
-};
 
+    G4SurfaceMeshCGAL* GetSurfaceMesh() override;
+
+};
 #endif

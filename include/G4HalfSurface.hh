@@ -5,6 +5,7 @@
 #include "G4VSolid.hh"
 #include "G4AffineTransform.hh"
 #include "G4GeometryTolerance.hh"
+#include "G4SurfaceMeshCGAL.hh"
 #include <vector>
 
 
@@ -34,6 +35,7 @@ public:
     virtual void Transform(const G4AffineTransform& t) = 0;
 
     virtual std::ostream& StreamInfo(std::ostream&) const;
+    virtual G4SurfaceMeshCGAL* GetSurfaceMesh() = 0;
 };
 
 #endif

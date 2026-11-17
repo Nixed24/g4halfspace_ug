@@ -1,21 +1,17 @@
 #include <algorithm>
 #include <cmath>
+
 #include "G4HalfQuadric.hh"
 #include "G4PolynomialSolve.hh"
+#include "G4ImplicitSurfaceCGAL.hh"
 
-G4RotationMatrix G4HalfQuadric::_T(const G4RotationMatrix & M)
-{
-  G4RotationMatrix M_T;
-  M_T.set(M.rowX(), M.rowY(), M.rowZ()); // set columns to rows
-  return M_T;
-}
 std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4ThreeVector& p) const
 {
   const G4PolynomialSolve polysolve;
   const G4double r_x = p.x(), r_y = p.y(), r_z = p.z();
   const G4double M_0 = this->R;
-  const G4double b_x = this->P.x() * 0.5, b_y = this->P.y() * 0.5, b_z = this->P.z() * 0.5;
-  const G4double a = Q.xx(), b = Q.xy(), c = Q.xz(), e = Q.yy(), f = Q.yz(), i = Q.zz();
+  const G4double b_x = this->P[0] * 0.5, b_y = this->P[1] * 0.5, b_z = this->P[2] * 0.5;
+  const G4double a = Q(0,0), b = Q(0,1), c = Q(0,2), e = Q(1,1), f = Q(1,2), i = Q(2,2);
   // Edge cases: Determinant = 0 | Determinant is a cubic polynomial in lambda, could add a check for lambda being at one of its roots
   // I don't know what the determinant being zero would actually correspond to, it's not a plane because that would just give identity
   // but I think it could mean that there are infinitely many solutions for the closest point OR maybe the p is already on the surface
@@ -262,16 +258,15 @@ pow(a,2)*pow(e,2)*i*pow(r_z,2)-2*a*pow(b,2)*e*i*pow(r_z,2)+pow(b,4)*i*pow(r_z,2)
   std::vector<G4ThreeVector> candidate_points;
   G4ThreeVector candidate_point;
   std::vector<G4double> candidate_distances;
-  if (lambdas.size() == 0) {
+  if (lambdas.empty()) {
     // all roots are complex/not found => lambda contour doesn't exist
     // (think it happens if there are infinite solutions, e.g point is at the centre of a sphere)
     // or doesn't touch/intersect the quadric surface
-    return std::vector<G4ThreeVector>();
+    return {};
   }
-  for (unsigned long int i_loop = 0; i_loop < lambdas.size(); i_loop++) {
+  for (double cur_lambda : lambdas) {
     // Process each lambda value
     // Will run into div by zero here if determinant is equal to zero
-    G4double cur_lambda = lambdas[i_loop];
     G4double det_denom = ((1-cur_lambda*a)*((1-cur_lambda*e)*(1-cur_lambda*i)-pow(cur_lambda,2)*pow(f,2))
                      -cur_lambda*b*(cur_lambda*b*(1-cur_lambda*i)+pow(cur_lambda,2)*c*f)-cur_lambda*c*(pow(cur_lambda,2)*b*f+cur_lambda*c*(1-cur_lambda*e)));
     if (det_denom == 0)
@@ -305,11 +300,17 @@ pow(a,2)*pow(e,2)*i*pow(r_z,2)-2*a*pow(b,2)*e*i*pow(r_z,2)+pow(b,4)*i*pow(r_z,2)
   return candidate_points;
 }
 
-G4RotationMatrix G4HalfQuadric::get_Q() const
+G4RotationMatrix G4HalfQuadric::_transpose(const G4RotationMatrix & M)
+{
+  G4RotationMatrix M_T;
+  M_T.set(M.rowX(), M.rowY(), M.rowZ()); // set columns to rows
+  return M_T;
+}
+CLHEP::HepMatrix G4HalfQuadric::get_Q() const
 {
   return this->Q;
 }
-G4ThreeVector G4HalfQuadric::get_P() const
+CLHEP::HepVector G4HalfQuadric::get_P() const
 {
   return this->P;
 }
@@ -317,11 +318,11 @@ G4double G4HalfQuadric::get_R() const
 {
   return this->R;
 }
-void G4HalfQuadric::set_Q(const G4RotationMatrix& new_Q)
+void G4HalfQuadric::set_Q(const CLHEP::HepMatrix& new_Q)
 {
   this->Q = new_Q;
 }
-void G4HalfQuadric::set_P(const G4ThreeVector& new_P)
+void G4HalfQuadric::set_P(const CLHEP::HepVector& new_P)
 {
   this->P = new_P;
 }
@@ -334,44 +335,51 @@ G4double G4HalfQuadric::ImplicitFunction(const G4ThreeVector& p) const
 {
   // x_T Q x + P dot x + R
   // P is a Hep3Vector, Q is a HepRotation/RotationMatrix
-  G4double x_T_Q_x = this->Q.xx() * p.x() * p.x() + this->Q.xy() * p.x() * p.y() + this->Q.xz() * p.x() * p.z()
-           + this->Q.yx() * p.y() * p.x() + this->Q.yy() * p.y() * p.y() + this->Q.yz() * p.y() * p.z()
-           + this->Q.zx() * p.z() * p.x() + this->Q.zy() * p.z() * p.y() + this->Q.zz() * p.z() * p.z();
-  G4double P_x = this->P * p;
+  CLHEP::HepVector casted_point(3);
+  casted_point[0] = p.x();
+  casted_point[1] = p.y();
+  casted_point[2] = p.z();
+  G4double x_T_Q_x = dot((casted_point.T() * this->Q).T(), casted_point);
+  G4double P_x = dot(casted_point, this->P);
   return x_T_Q_x + P_x + this->R;
 }
 
 std::vector<G4ThreeVector> G4HalfQuadric::RayIntersection(const G4ThreeVector& p, const G4ThreeVector& v) const
 {
-  // a = v_T Q v
-  // b = 2 v_T Q p + v * P
-  // c = p_T Q p + R
   if (this->Inside(p) == kSurface)
   {
     return std::vector<G4ThreeVector> {p};
   }
-    G4double a = this->Q.xx() * v.x() * v.x() + this->Q.xy() * v.x() * v.y() + this->Q.xz() * v.x() * v.z()
-  + this->Q.yx() * v.y() * v.x() + this->Q.yy() * v.y() * v.y() + this->Q.yz() * v.y() * v.z()
-  + this->Q.zx() * v.z() * v.x() + this->Q.zy() * v.z() * v.y() + this->Q.zz() * v.z() * v.z();
+  // G4ThreeVector doesn't have a transpose op and I want to avoid type confusion
+  // So I'm gonna use HepVector internally
+  // a = v_T Q v
+    CLHEP::HepVector casted_point(3);
+    casted_point[0] = p.x();
+    casted_point[1] = p.y();
+    casted_point[2] = p.z();
+    CLHEP::HepVector casted_v(3);
+    casted_v[0] = v.x();
+    casted_v[1] = v.y();
+    casted_v[2] = v.z();
+    // row vector * column vector multiplication is NOT supported by CLHEP
+    // So I have to do this transpose math hack
+    G4double a = dot((casted_v.T() * this->Q).T(), casted_v);
   if (a == 0) // avoid div by zero when solving -- probably an exotic case
   {
     return std::vector<G4ThreeVector> {p};
   }
-  G4double b = 2 * (this->Q.xx() * v.x() * p.x() + this->Q.xy() * v.x() * p.y() + this->Q.xz() * v.x() * p.z()
-+ this->Q.yx() * v.y() * p.x() + this->Q.yy() * v.y() * p.y() + this->Q.yz() * v.y() * p.z()
-+ this->Q.zx() * v.z() * p.x() + this->Q.zy() * v.z() * p.y() + this->Q.zz() * v.z() * p.z())
-  + (this->P * v);
-  G4double c = this->Q.xx() * p.x() * p.x() + this->Q.xy() * p.x() * p.y() + this->Q.xz() * p.x() * p.z()
-           + this->Q.yx() * p.y() * p.x() + this->Q.yy() * p.y() * p.y() + this->Q.yz() * p.y() * p.z()
-           + this->Q.zx() * p.z() * p.x() + this->Q.zy() * p.z() * p.y() + this->Q.zz() * p.z() * p.z()
-  + p * this->P + this->R;
+  // b = 2 v_T Q p + v * P
+  G4double b = 2 * dot((casted_v.T() * this->Q).T(), casted_point) + dot(casted_v, P);
+  // c = p_T Q p + p*P + R
+  G4double c = dot((casted_point.T() * this->Q).T(), casted_point) + dot(casted_point, P) + this->R;
+
   const std::vector<G4double> coefficients {a,b,c};
   std::vector<G4ThreeVector> intersections;
   const G4PolynomialSolve polysolve;
   const std::vector<G4double> v_multipliers = polysolve.SolvePolynomial(coefficients);
-  for (auto it = v_multipliers.begin(); it != v_multipliers.end(); ++it)
+  for (double v_multiplier : v_multipliers)
   {
-    intersections.push_back(p + (*it) * v);
+    intersections.push_back(p + v_multiplier * v);
   }
   return intersections;
 }
@@ -394,10 +402,9 @@ std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
 
 G4ThreeVector G4HalfQuadric::SurfaceNormal(const G4ThreeVector& p) const
 {
-  G4double grad_x = 2 * (Q.xx() * p[0] + Q.xy() * p[1] + Q.xz() * p[2]);
-  G4double grad_y = 2 * (Q.yy() * p[0] + Q.yx() * p[1] + Q.yz() * p[2]);
-  G4double grad_z = 2 * (Q.zz() * p[0] + Q.zx() * p[1] + Q.zy() * p[2]);
-  G4ThreeVector grad {grad_x, grad_y, grad_z};
+  CLHEP::HepVector g(3);
+  g = 2 * this->Q * g;
+  G4ThreeVector grad {g[0], g[1], g[2]};
   return grad;
 }
 G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
@@ -409,7 +416,7 @@ G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
     distances.push_back((candidate_point - p).mag());
   }
   const auto min_distance = std::min_element(distances.begin(), distances.end());
-  const G4int element_index = std::distance(distances.begin(), min_distance);
+  const long element_index = std::distance(distances.begin(), min_distance);
   return candidate_points[element_index];
 }
 
@@ -417,14 +424,23 @@ void G4HalfQuadric::Transform(const G4AffineTransform& t)
 {
   G4RotationMatrix rotate = t.NetRotation(); // M_ij
   G4ThreeVector translate = t.NetTranslation(); // T_j
+  CLHEP::HepMatrix rotate_cast(3,3);
+  CLHEP::HepVector translate_cast(3);
+  for (auto i : {0,1,2})
+  {
+    translate_cast[i] = translate[i];
+    for (auto j : {0,1,2})
+    {
+      rotate_cast[i][j] = rotate[i][j];
+    }
+  }
   // this is the vector that the ORIGIN moves by, if a minus sign is missed then that is because the translation is of the object and not its occupied space.
-  G4RotationMatrix Q_prime = _T(rotate) * this->Q * rotate;
-  G4ThreeVector P_prime = 2 * (_T(rotate) * this->Q * translate) + (_T(rotate) * (this->P));
-  G4double R_prime = (this->P * translate) + (_T(this->Q) * translate) * translate + this->R; // was missing this->R
+  CLHEP::HepMatrix Q_prime = rotate_cast.T() * this->Q * rotate_cast;
+  CLHEP::HepVector P_prime = 2 * (rotate_cast.T() * this->Q * translate_cast) + (rotate_cast.T() * (this->P));
+  G4double R_prime = dot(this->P, translate_cast) + dot(this->Q.T() * translate_cast, translate_cast) + this->R; // was missing this->R
   this->Q = Q_prime;
   this->P = P_prime;
   this->R = R_prime;
-  return;
 }
 
 G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
@@ -437,4 +453,16 @@ G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
   }
   const auto min_distance = std::min_element(candidate_distances.begin(), candidate_distances.end());
   return *min_distance;
+}
+
+G4SurfaceMeshCGAL* G4HalfQuadric::GetSurfaceMesh() {
+
+
+  G4cout << "G4HalfQuadric::GetSurfaceMesh" << std::endl;
+
+
+  // mesh quadric mesh
+  return make_mesh(*this, 3000*3000);
+
+
 }

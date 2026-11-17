@@ -7,10 +7,12 @@
 #include <memory>
 #include <utility>
 #include "G4VSolid.hh"
+#include "G4SurfaceMeshCGAL.hh"
 
 class G4HalfIntersectionSolid : public G4HalfSolid
 {
     std::vector<std::unique_ptr<G4HalfSurface>> intersectionSurfaces_;
+    // std::vector<G4HalfSurface*> intersectionSurfaces_;
     std::vector<std::unique_ptr<G4HalfSurface>> subtractionSurfaces_;
 
 protected:
@@ -25,6 +27,26 @@ public:
                             std::vector<std::unique_ptr<G4HalfSurface>> subtractionSurfaces,
                             const G4String& name = "G4HalfIntersectionSolid");
 
+    /*
+    ~G4HalfIntersectionSolid()
+    {
+        for (auto s : intersectionSurfaces_)
+        {
+            if (s)
+            {
+                delete s;
+            }
+        }
+        for (auto s : subtractionSurfaces_)
+        {
+            if (s)
+            {
+                delete s;
+            }
+        }
+    }
+    */
+
     // Prevents user from having to use smart pointers
     template <typename Surface, typename... Args> // Needs to be implemetned in header or you get linker errors at runtime
     Surface& AddIntersectionSurface(Args&&... args)
@@ -34,7 +56,10 @@ public:
         intersectionSurfaces_.push_back(std::move(surface));
         return result;
     }
-
+    //void AddIntersectionSurface(G4HalfSurface* surf)
+    //{
+    //    intersectionSurfaces_.push_back(surf);
+    //}
     template <typename Surface, typename... Args>
     Surface& AddSubtractionSurface(Args&&... args)
     {
@@ -65,6 +90,7 @@ public:
                           G4double& pMin, G4double& pMax) const override;
     void DescribeYourselfTo(G4VGraphicsScene& scene) const override;
     std::ostream& StreamInfo(std::ostream& os) const override;
+    G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 };
 
 #endif

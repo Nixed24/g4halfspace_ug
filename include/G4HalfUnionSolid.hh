@@ -84,6 +84,7 @@ public:
     G4GeometryType GetEntityType() const override;
     void DescribeYourselfTo(G4VGraphicsScene& scene) const override;
     std::ostream& StreamInfo(std::ostream& os) const override;
+    G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 };
 
 #endif
