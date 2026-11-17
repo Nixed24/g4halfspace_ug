@@ -7,6 +7,10 @@
 #include "G4PVPlacement.hh"
 #include "G4SystemOfUnits.hh"
 
+#include "G4HalfIntersectionSolid.hh"
+#include "G4HalfUnionSolid.hh"
+#include "G4HalfPlane.hh"
+
 
 DetectorConstruction::DetectorConstruction() {}
 
@@ -47,6 +51,35 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
                                      0,
                                      false);
 
+    G4Material* shape2_mat = nist->FindOrBuildMaterial("G4_BONE_COMPACT_ICRU");
+    const G4double d = 0.5 * m;
 
+    G4ThreeVector shapePosition;
+
+    auto makeCube = [d](G4HalfIntersectionSolid& s) {
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(1. ,0., 0.), d);
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 1., 0.), d);
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 0., 1.), d);
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(-1., 0., 0.), d);
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., -1., 0.), d);
+        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 0., -1.), d);
+    };
+
+    auto* solidShape = new G4HalfUnionSolid("Shape");
+
+    auto& outerCube = solidShape->AddIntersectionSolid<G4HalfIntersectionSolid>("OuterCube");
+    makeCube(outerCube);
+
+    auto* logicShape = new G4LogicalVolume(solidShape,
+                                            shape2_mat,
+                                            "Shape");
+    new G4PVPlacement(nullptr,  // no rotation
+                    shapePosition,  // at position
+                    logicShape,  // its logical volume
+                    "Shape",  // its name
+                    logicWorld,  // its mother  volume
+                    false,  // no boolean operation
+                    0,  // copy number
+                    false);
   return physWorld;
 }
