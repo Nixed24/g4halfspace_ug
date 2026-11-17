@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cmath>
+#include <eigen3/Eigen/Dense>
+
 #include "G4HalfQuadric.hh"
 #include "G4PolynomialSolve.hh"
 
@@ -384,6 +386,49 @@ G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p, const G4ThreeV
     distances.push_back((intersection - p).mag());
   }
   return *(std::min_element(distances.begin(), distances.end()));
+}
+
+G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) const
+{
+  G4cout << Q << G4endl;
+
+  Eigen::Matrix3d q;
+  q << Q(0,0), Q(0,1), Q(0,2),
+       Q(1,0), Q(1,1), Q(1,2),
+       Q(2,0), Q(2,1), Q(2,2);
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(q);
+
+  if (solver.info() != Eigen::Success)
+    throw std::runtime_error("G4HalfQuadric::GetRotationMatrix: Eigenvalue calculation failed.");
+
+  Eigen::Vector3d eigenvalues = solver.eigenvalues().real();
+  Eigen::Matrix3d eigenvectors = solver.eigenvectors().real();
+
+  QEigenvalues.set(eigenvalues[0], eigenvalues[1], eigenvalues[2]);
+
+  if (eigenvectors.determinant() < 0)
+  {
+    const Eigen::Vector3d DValues(-1, 1, 1);
+    const Eigen::Matrix3d D = DValues.asDiagonal();
+    eigenvectors *= D;
+  }
+
+  G4cout << "Calculated Eigenvalues: " << eigenvalues << G4endl;
+  G4cout << "Calculated Eigenvectors: " << eigenvectors << G4endl;
+
+  G4RotationMatrix rotation(
+    CLHEP::Hep3Vector(eigenvectors(0,0), eigenvectors(0,1), eigenvectors(0,2)),
+    CLHEP::Hep3Vector(eigenvectors(1,0), eigenvectors(1,1), eigenvectors(1,2)),
+    CLHEP::Hep3Vector(eigenvectors(2,0), eigenvectors(2,1), eigenvectors(2,2))
+    );
+
+  return rotation;
+}
+
+G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const
+{
+  return kSphere;
 }
 
 std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const

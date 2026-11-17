@@ -12,6 +12,20 @@
 #include "G4HalfPlane.hh"
 
 
+G4HalfIntersectionSolid* makeCube(G4double halfLength)
+{
+    const std::vector<G4HalfSurface*> cubeList({
+        new G4HalfPlane(G4ThreeVector(1,0,0), halfLength),
+        new G4HalfPlane(G4ThreeVector(0,1,0), halfLength),
+        new G4HalfPlane (G4ThreeVector(0,0,1), halfLength),
+        new G4HalfPlane (G4ThreeVector(-1,0,0), halfLength),
+        new G4HalfPlane (G4ThreeVector(0,-1,0), halfLength),
+        new G4HalfPlane (G4ThreeVector(0,0,-1), halfLength)
+    });
+
+    return new G4HalfIntersectionSolid(cubeList, {}, "Cube");
+}
+
 DetectorConstruction::DetectorConstruction() {}
 
 G4VPhysicalVolume* DetectorConstruction::Construct() {
@@ -52,25 +66,23 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
                                      false);
 
     G4Material* shape2_mat = nist->FindOrBuildMaterial("G4_BONE_COMPACT_ICRU");
-    const G4double d = 0.5 * m;
 
     G4ThreeVector shapePosition;
 
-    auto makeCube = [d](G4HalfIntersectionSolid& s) {
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(1. ,0., 0.), d);
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 1., 0.), d);
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 0., 1.), d);
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(-1., 0., 0.), d);
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., -1., 0.), d);
-        s.AddIntersectionSurface<G4HalfPlane>(G4ThreeVector(0., 0., -1.), d);
-    };
+    G4HalfIntersectionSolid* cube = makeCube(0.5 * m);
+    G4HalfIntersectionSolid* translatedCube = makeCube(0.5 * m);
 
-    auto* solidShape = new G4HalfUnionSolid("Shape");
+    const G4AffineTransform translation(G4ThreeVector(-0.5 * m, -0.5 * m, -0.5 * m));
+    translatedCube->Transform(translation);
 
-    auto& outerCube = solidShape->AddIntersectionSolid<G4HalfIntersectionSolid>("OuterCube");
-    makeCube(outerCube);
+    const std::vector<G4HalfSolid*> unionList({
+        cube,
+        translatedCube
+    });
 
-    auto* logicShape = new G4LogicalVolume(solidShape,
+    auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
+
+    auto* logicShape = new G4LogicalVolume(megaCube,
                                             shape2_mat,
                                             "Shape");
     new G4PVPlacement(nullptr,  // no rotation
@@ -83,3 +95,4 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
                     false);
   return physWorld;
 }
+

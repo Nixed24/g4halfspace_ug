@@ -1,3 +1,4 @@
+#include "G4HalfQuadric.hh"
 
 #include "G4BooleanSolid.hh"
 #include "G4GDMLParser.hh"
@@ -10,6 +11,7 @@
 #include "G4VisExecutive.hh"
 #include "G4ios.hh"
 #include "FTFP_BERT.hh"
+#include "G4SystemOfUnits.hh"
 
 #include "ActionInitialization.hh"
 #include "DetectorConstruction.hh"
@@ -19,6 +21,18 @@ int main(int argc, char** argv)
 {
 
   auto* runManager = G4RunManagerFactory::CreateRunManager();
+
+    auto sphere = G4HalfQuadric();
+    sphere.set_R(-3);
+    G4RotationMatrix rotation;
+    rotation.rotateZ(30*deg);
+
+    G4AffineTransform rotate(rotation);
+    sphere.Transform(rotate);
+    G4ThreeVector eigenvals;
+
+    G4cout << "SPHERE TEST" << G4endl;
+    sphere.GetRotationMatrix(eigenvals);
 
   runManager->SetUserInitialization(new DetectorConstruction);
   runManager->SetUserInitialization(new ActionInitialization);

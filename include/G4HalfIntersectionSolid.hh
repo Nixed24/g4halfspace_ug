@@ -10,8 +10,8 @@
 
 class G4HalfIntersectionSolid : public G4HalfSolid
 {
-    std::vector<std::unique_ptr<G4HalfSurface>> intersectionSurfaces_;
-    std::vector<std::unique_ptr<G4HalfSurface>> subtractionSurfaces_;
+    std::vector<G4HalfSurface*> intersectionSurfaces_;
+    std::vector<G4HalfSurface*> subtractionSurfaces_;
 
 protected:
     void GetOnSurfaceNormal(const G4ThreeVector& p, G4ThreeVector& normal) const override;
@@ -21,28 +21,15 @@ public:
     using G4HalfSolid::DistanceToOut;
 
     explicit G4HalfIntersectionSolid(const G4String& name = "G4HalfIntersectionSolid"); // Name only constructor
-    G4HalfIntersectionSolid(std::vector<std::unique_ptr<G4HalfSurface>> intersectionSurfaces,
-                            std::vector<std::unique_ptr<G4HalfSurface>> subtractionSurfaces,
+    G4HalfIntersectionSolid(const std::vector<G4HalfSurface*>& intersectionSurfaces,
+                            const std::vector<G4HalfSurface*>& subtractionSurfaces,
                             const G4String& name = "G4HalfIntersectionSolid");
 
-    // Prevents user from having to use smart pointers
-    template <typename Surface, typename... Args> // Needs to be implemetned in header or you get linker errors at runtime
-    Surface& AddIntersectionSurface(Args&&... args)
-    {
-        auto surface = std::make_unique<Surface>(std::forward<Args>(args)...);
-        Surface& result = *surface;
-        intersectionSurfaces_.push_back(std::move(surface));
-        return result;
-    }
+    ~G4HalfIntersectionSolid() override;
 
-    template <typename Surface, typename... Args>
-    Surface& AddSubtractionSurface(Args&&... args)
-    {
-        auto surface = std::make_unique<Surface>(std::forward<Args>(args)...);
-        Surface& result = *surface;
-        subtractionSurfaces_.push_back(std::move(surface));
-        return result;
-    }
+    void AddIntersectionSurface(G4HalfSurface* surface);
+    void AddSubtractionSurface(G4HalfSurface* surface);
+
 
     G4double ImplicitFunction(const G4ThreeVector &p) const override;
 
