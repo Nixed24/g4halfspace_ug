@@ -37,6 +37,22 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 file(GLOB HalfSpaceSources ${PROJECT_SOURCE_DIR}/src/*cc)
 file(GLOB HalfSpaceHeaders ${PROJECT_SOURCE_DIR}/include/*.hh)
-add_library(g4halfspace SHARED ${HalfSpaceSources} ${HalfSpcaeHeaders})
+add_library(g4halfspace SHARED ${HalfSpaceSources} ${HalfSpaceHeaders})
 target_compile_options(g4halfspace PRIVATE -Werror )
 target_link_libraries(g4halfspace ${Geant4_LIBRARIES} CGAL::CGAL)
+
+file(GLOB HalfSpaceTestSources ${PROJECT_SOURCE_DIR}/test/*cc)
+file(GLOB HalfSpaceTestHeaders ${PROJECT_SOURCE_DIR}/test/*hh)
+add_executable(g4halfspace_test ${HalfSpaceTestSources} ${HalfSpaceTestHeaders})
+target_compile_options(g4halfspace_test PRIVATE -Werror)
+target_link_libraries(g4halfspace_test ${Geant4_LIBRARIES} g4halfspace)
+
+# Copy over macros
+set(SCRIPTS vis.mac)
+foreach(_script ${SCRIPTS})
+    configure_file(
+            ${PROJECT_SOURCE_DIR}/${_script}
+            ${PROJECT_BINARY_DIR}/${_script}
+            COPYONLY
+    )
+endforeach()
