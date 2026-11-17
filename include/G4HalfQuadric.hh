@@ -2,11 +2,13 @@
 #define G4HALF_QUADRIC_HH
 
 #include <vector>
+#include <CLHEP/Matrix/Matrix.h>
 
 #include "G4HalfSurface.hh"
 #include "G4Types.hh"
 #include "G4VSolid.hh"
 #include "G4RotationMatrix.hh"
+
 class G4HalfQuadric : public G4HalfSurface {
   private:
 
@@ -16,6 +18,12 @@ class G4HalfQuadric : public G4HalfSurface {
     G4RotationMatrix Q; // Default constructor of G4RotationMatrix gives 3x3 identity
     G4ThreeVector P;
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
+
+    enum QuadricType
+    {
+      // Populate this later
+    };
+
   public:
 
     G4RotationMatrix get_Q() const;
@@ -34,6 +42,9 @@ class G4HalfQuadric : public G4HalfSurface {
 
     G4double DistanceToSurface(const G4ThreeVector& p, const G4ThreeVector& v) const override;
     G4double DistanceToSurface(const G4ThreeVector&p) const override;
+
+    G4RotationMatrix GetRotationMatrix(G4ThreeVector &QEigenvalues) const;
+    QuadricType IdentifyQuadricType() const;
 
     // This will involve taking a gradient of the implicit function and evaluating it at p
     G4ThreeVector SurfaceNormal(const G4ThreeVector& p) const override;
