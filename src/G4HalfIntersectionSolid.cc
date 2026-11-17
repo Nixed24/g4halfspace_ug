@@ -11,8 +11,8 @@ G4HalfIntersectionSolid::G4HalfIntersectionSolid(const G4String& name) : G4HalfS
 {
 }
 
-G4HalfIntersectionSolid::G4HalfIntersectionSolid(std::vector<G4HalfSurface*>& intersectionSurfaces,
-                                                 std::vector<G4HalfSurface*>& subtractionSurfaces,
+G4HalfIntersectionSolid::G4HalfIntersectionSolid(const std::vector<G4HalfSurface*>& intersectionSurfaces,
+                                                 const std::vector<G4HalfSurface*>& subtractionSurfaces,
                                                  const G4String& name)
                                                      :  G4HalfSolid(name),
                                                         intersectionSurfaces_(intersectionSurfaces),
@@ -30,6 +30,16 @@ G4HalfIntersectionSolid::~G4HalfIntersectionSolid()
     for (const auto s : subtractionSurfaces_)
         if (s) delete s;
 
+}
+
+void G4HalfIntersectionSolid::AddIntersectionSurface(G4HalfSurface *surface)
+{
+    intersectionSurfaces_.push_back(surface);
+}
+
+void G4HalfIntersectionSolid::AddSubtractionSurface(G4HalfSurface *surface)
+{
+    subtractionSurfaces_.push_back(surface);
 }
 
 G4double G4HalfIntersectionSolid::ImplicitFunction(const G4ThreeVector &p) const
@@ -55,7 +65,7 @@ void G4HalfIntersectionSolid::GetPotentialRayIntersections(const G4ThreeVector& 
 {
     if (v.mag() == 0) throw std::logic_error("Cannot pass zero magnitude directional vector.");
 
-    G4ThreeVector vUnit = v.unit();
+    const G4ThreeVector vUnit = v.unit();
 
     auto getHits = [&](const  G4HalfSurface* surface, const G4bool subtraction)
     {

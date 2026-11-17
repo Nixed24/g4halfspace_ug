@@ -21,8 +21,8 @@ public:
     using G4HalfSolid::DistanceToOut;
 
     explicit G4HalfIntersectionSolid(const G4String& name = "G4HalfIntersectionSolid"); // Name only constructor
-    G4HalfIntersectionSolid(std::vector<G4HalfSurface*>& intersectionSurfaces,
-                            std::vector<G4HalfSurface*>& subtractionSurfaces,
+    G4HalfIntersectionSolid(const std::vector<G4HalfSurface*>& intersectionSurfaces,
+                            const std::vector<G4HalfSurface*>& subtractionSurfaces,
                             const G4String& name = "G4HalfIntersectionSolid");
 
     ~G4HalfIntersectionSolid() override;
