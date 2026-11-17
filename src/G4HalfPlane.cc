@@ -1,5 +1,13 @@
 #include "G4HalfPlane.hh"
 
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Exact_rational.h>
+#include <CGAL/Extended_cartesian.h>
+#include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/Surface_mesh.h>
+#include "G4ImplicitSurfaceCGAL.hh"
+
 G4HalfPlane::G4HalfPlane(const G4ThreeVector& normalIn, const G4double& distanceIn)
             :normal(normalIn.unit()),
              distance(distanceIn) {}
@@ -67,4 +75,27 @@ void G4HalfPlane::Transform(const G4AffineTransform& t)
 
     this->normal = t.TransformAxis(normal).unit();
     this->distance = normal.dot(transformedPoint);
+}
+
+
+G4SurfaceMeshCGAL* G4HalfPlane::GetSurfaceMesh() {
+
+    Nef_polyhedron_3_ECER nef = Nef_polyhedron_3_ECER(Nef_polyhedron_3_ECER::COMPLETE);
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(1000000000,0,0),
+                                         Vector_3_ECER(1, 0, 0)));
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(-1000000000,0,0),
+                                         Vector_3_ECER(-1, 0, 0)));
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,1000000000,0),
+                                         Vector_3_ECER(0, 1, 0)));
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,-1000000000,0),
+                                         Vector_3_ECER(0, -1, 0)));
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,0,1000000000),
+                                         Vector_3_ECER(0, 0, 1)));
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,0,-1000000000),
+                                         Vector_3_ECER(0, 0, -1)));
+
+    nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(normal.x() * distance, normal.y() * distance, normal.z() * distance),
+                                         Vector_3_ECER(normal.x(), normal.y(), normal.z())));
+
+    return (new G4SurfaceMeshCGAL(nef));
 }

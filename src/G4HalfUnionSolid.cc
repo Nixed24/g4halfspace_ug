@@ -126,14 +126,34 @@ G4GeometryType G4HalfUnionSolid::GetEntityType() const
     return "G4HalfUnionSolid";
 }
 
-void G4HalfUnionSolid::DescribeYourselfTo(G4VGraphicsScene& scene) const
-{
-    scene.AddSolid(*this);
-}
-
 std::ostream& G4HalfUnionSolid::StreamInfo(std::ostream& os) const
 {
     os << "--- Half Union Solid: " << GetName() << " ---" << std::endl;
 
     return os;
+}
+
+G4SurfaceMeshCGAL* G4HalfUnionSolid::GetSurfaceMesh() {
+
+    G4cout << "G4HalfUnionSolid::GetSurfaceMesh" << G4endl;
+
+    G4SurfaceMeshCGAL *sm1 = new G4SurfaceMeshCGAL();
+
+    for(const auto &s : intersectionSolids_)
+    {
+        auto sm2 = s->GetSurfaceMesh();
+        G4bool valid;
+        sm1 = sm1->Union(sm2, valid);
+    }
+
+    return sm1;
+
+}
+
+void G4HalfUnionSolid::DescribeYourselfTo(G4VGraphicsScene& scene) const {
+    G4cout << "G4HalfUnionSolid::DescribeYourselfTo" << std::endl;
+
+    auto sm = const_cast<G4HalfUnionSolid*>(this)->GetSurfaceMesh();
+    auto ph = sm->GetG4Polyhedron();
+    scene.AddPrimitive(*ph);
 }

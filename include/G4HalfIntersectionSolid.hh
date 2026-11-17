@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 #include "G4VSolid.hh"
+#include "G4SurfaceMeshCGAL.hh"
 
 class G4HalfIntersectionSolid : public G4HalfSolid
 {
@@ -52,6 +53,7 @@ public:
                           G4double& pMin, G4double& pMax) const override;
     void DescribeYourselfTo(G4VGraphicsScene& scene) const override;
     std::ostream& StreamInfo(std::ostream& os) const override;
+    G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 };
 
 #endif

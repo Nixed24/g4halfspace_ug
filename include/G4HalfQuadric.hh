@@ -3,20 +3,20 @@
 
 #include <vector>
 #include <CLHEP/Matrix/Matrix.h>
+#include <CLHEP/Matrix/Vector.h>
 
 #include "G4HalfSurface.hh"
 #include "G4Types.hh"
 #include "G4VSolid.hh"
-#include "G4RotationMatrix.hh"
 
 class G4HalfQuadric : public G4HalfSurface {
   private:
+    static G4RotationMatrix _transpose(const G4RotationMatrix & M);
 
-    static G4RotationMatrix _T(const G4RotationMatrix & M);
     std::vector<G4ThreeVector> GetLMContourIntersections(const G4ThreeVector& p) const;
 
-    G4RotationMatrix Q; // Default constructor of G4RotationMatrix gives 3x3 identity
-    G4ThreeVector P;
+    CLHEP::HepMatrix Q {CLHEP::HepMatrix(3,3,1)};
+    CLHEP::HepVector P;
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
 
     enum QuadricType
@@ -37,11 +37,11 @@ class G4HalfQuadric : public G4HalfSurface {
 
   public:
 
-    G4RotationMatrix get_Q() const;
-    G4ThreeVector get_P() const;
+    CLHEP::HepMatrix get_Q() const;
+    CLHEP::HepVector get_P() const;
     G4double get_R() const;
-    void set_Q(const G4RotationMatrix& new_Q);
-    void set_P(const G4ThreeVector& new_P);
+    void set_Q(const CLHEP::HepMatrix& new_Q);
+    void set_P(const CLHEP::HepVector& new_P);
     void set_R(G4double new_R);
 
     G4HalfQuadric() = default;
@@ -64,6 +64,8 @@ class G4HalfQuadric : public G4HalfSurface {
     void Transform(const G4AffineTransform& t) override;
 
     std::ostream& StreamInfo(std::ostream&) const override;
+
+    G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 };
 
 #endif

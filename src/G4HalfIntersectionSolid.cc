@@ -194,12 +194,6 @@ G4GeometryType G4HalfIntersectionSolid::GetEntityType() const
     return "G4HalfIntersectionSolid";
 }
 
-void G4HalfIntersectionSolid::DescribeYourselfTo(G4VGraphicsScene& scene) const
-{
-    // Standard implementation as suggested by CoPilot
-    scene.AddSolid(*this);
-}
-
 G4bool G4HalfIntersectionSolid::CalculateExtent(const EAxis pAxis, const G4VoxelLimits& pVoxelLimit, const G4AffineTransform& pTransform, G4double& pMin, G4double& pMax) const
 {
     return false;
@@ -219,4 +213,33 @@ std::ostream& G4HalfIntersectionSolid::StreamInfo(std::ostream& os) const
         s->StreamInfo(os);
     }
     return os;
+}
+
+G4SurfaceMeshCGAL* G4HalfIntersectionSolid::GetSurfaceMesh() {
+
+    G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh" << G4endl;
+
+    G4SurfaceMeshCGAL *sm1 = new G4SurfaceMeshCGAL();
+
+    for(const auto &s : intersectionSurfaces_) {
+        auto sm2 = s->GetSurfaceMesh();
+        G4bool valid;
+        sm1 = sm1->Intersection(sm2, valid);
+    }
+    for(const auto &s : subtractionSurfaces_) {
+        auto sm2 = s->GetSurfaceMesh();
+        G4bool valid;
+        sm1 = sm1->Subtraction(sm2, valid);
+    }
+
+    return sm1;
+
+}
+
+void G4HalfIntersectionSolid::DescribeYourselfTo(G4VGraphicsScene& scene) const {
+    G4cout << "G4HalfIntersectionSolid::DescribeYourselfTo" << std::endl;
+
+    auto sm = const_cast<G4HalfIntersectionSolid*>(this)->GetSurfaceMesh();
+    auto ph = sm->GetG4Polyhedron();
+    scene.AddPrimitive(*ph);
 }
