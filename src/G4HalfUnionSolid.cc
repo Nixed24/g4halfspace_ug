@@ -139,7 +139,7 @@ G4SurfaceMeshCGAL* G4HalfUnionSolid::GetSurfaceMesh() {
 
     G4SurfaceMeshCGAL *sm1 = new G4SurfaceMeshCGAL();
 
-    for(const auto &s : intersectionSolids_)
+    for(const auto &s : unionSolids_)
     {
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;

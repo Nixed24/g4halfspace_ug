@@ -400,9 +400,9 @@ G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) c
   G4cout << Q << G4endl;
 
   Eigen::Matrix3d q;
-  q << Q(0,0), Q(0,1), Q(0,2),
-       Q(1,0), Q(1,1), Q(1,2),
-       Q(2,0), Q(2,1), Q(2,2);
+  q << Q(1,1), Q(1,2), Q(1,3),
+       Q(2,1), Q(2,2), Q(2,3),
+       Q(3,1), Q(3,2), Q(3,3);
 
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(q);
 
@@ -479,6 +479,7 @@ void G4HalfQuadric::Transform(const G4AffineTransform& t)
     }
   }
   // this is the vector that the ORIGIN moves by, if a minus sign is missed then that is because the translation is of the object and not its occupied space.
+
   CLHEP::HepMatrix Q_prime = rotate_cast.T() * this->Q * rotate_cast;
   CLHEP::HepVector P_prime = 2 * (rotate_cast.T() * this->Q * translate_cast) + (rotate_cast.T() * (this->P));
   G4double R_prime = dot(this->P, translate_cast) + dot(this->Q.T() * translate_cast, translate_cast) + this->R; // was missing this->R
