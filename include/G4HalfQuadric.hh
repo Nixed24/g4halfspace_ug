@@ -16,7 +16,7 @@ class G4HalfQuadric : public G4HalfSurface {
     std::vector<G4ThreeVector> GetLMContourIntersections(const G4ThreeVector& p) const;
 
     CLHEP::HepMatrix Q {CLHEP::HepMatrix(3,3,1)};
-    CLHEP::HepVector P;
+    CLHEP::HepVector P {CLHEP::HepVector(3,0)};
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
 
     enum QuadricType
