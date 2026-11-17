@@ -426,6 +426,11 @@ G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) c
   return rotation;
 }
 
+G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const
+{
+  return kSphere;
+}
+
 std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
 {
     os << "--- Half Surface Quadric ---" << std::endl;

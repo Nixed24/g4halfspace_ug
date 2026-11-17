@@ -21,7 +21,18 @@ class G4HalfQuadric : public G4HalfSurface {
 
     enum QuadricType
     {
-      // Populate this later
+      kSphere,
+      kCylinder,
+      kPlane,
+      kEllipsoid,
+      kEllipticParaboloid,
+      kHyperboloidParaboloid,
+      kHyperboloidOneSheet,
+      kHyperboloidTwoSheets,
+      kEllipticCone,
+      kEllipticCylinder,
+      kHyperbolicCylinder,
+      kParabolicCylinder
     };
 
   public:
