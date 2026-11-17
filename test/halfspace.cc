@@ -22,8 +22,8 @@ int main(int argc, char** argv)
 
   auto* runManager = G4RunManagerFactory::CreateRunManager();
 
-    auto cyllinder = G4HalfQuadric();
-    cyllinder.set_R(-3);
+    auto sphere = G4HalfQuadric();
+    sphere.set_R(-3);
     G4RotationMatrix rotation;
     rotation.rotateZ(30*deg);
 
