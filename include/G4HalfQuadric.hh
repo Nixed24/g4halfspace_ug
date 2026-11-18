@@ -20,18 +20,17 @@ class G4HalfQuadric : public G4HalfSurface {
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
 
     enum QuadricType
-    {
-      kCoincidentPlanes,
-      kParabolicCylinder,
-      kIntersectingPlanes,
-      kEllipticCylinder,
+    { // Excluding imaginary types
+      kEllipsoid,
+      kHyperboloidOneSheet,
+      kHyperboloidTwoSheets,
+      kQuadricCone,
       kEllipticParaboloid,
       kHyperbolicParaboloid,
-      kQuadricCone,
-      kHyperboloidTwoSheets,
-      kHyperboloidOneSheet,
-      kEllipsoid,
-      kNullType
+      kEllipticCylinder,
+      kIntersectingPlanes,
+      kParabolicCylinder,
+      kCoincidentPlanes
     };
 
   public:
