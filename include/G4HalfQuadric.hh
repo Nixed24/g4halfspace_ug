@@ -45,6 +45,9 @@ class G4HalfQuadric : public G4HalfSurface {
     void set_R(G4double new_R);
 
     G4HalfQuadric() = default;
+    G4HalfQuadric(G4double R);
+    G4HalfQuadric(const CLHEP::HepMatrix& Q, const CLHEP::HepVector& P, G4double R);
+    G4HalfQuadric(const G4HalfQuadric& other) = default;
     ~G4HalfQuadric() override = default;
 
     G4double ImplicitFunction(const G4ThreeVector& p) const override;

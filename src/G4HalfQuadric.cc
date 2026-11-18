@@ -6,6 +6,18 @@
 #include "G4PolynomialSolve.hh"
 #include "G4ImplicitSurfaceCGAL.hh"
 
+G4HalfQuadric::G4HalfQuadric(G4double R) // sphere variable radius
+{
+  this->set_R(R);
+}
+G4HalfQuadric::G4HalfQuadric(const CLHEP::HepMatrix& Q, const CLHEP::HepVector& P, G4double R)
+{
+  this->set_Q(Q);
+  this->set_P(P);
+  this->set_R(R);
+}
+
+
 std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4ThreeVector& p) const
 {
   const G4PolynomialSolve polysolve;
@@ -508,6 +520,4 @@ G4SurfaceMeshCGAL* G4HalfQuadric::GetSurfaceMesh() {
 
   // mesh quadric mesh
   return make_mesh(*this, 3000*3000);
-
-
 }
