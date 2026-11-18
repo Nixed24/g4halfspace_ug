@@ -144,6 +144,7 @@ G4SurfaceMeshCGAL* G4HalfUnionSolid::GetSurfaceMesh() {
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;
         sm1 = sm1->Union(sm2, valid);
+        G4cout << "G4HalfUnionSolid::GetSurfaceMesh post-union facets = " << sm1->NumberOfFaces() << std::endl;
     }
 
     return sm1;
