@@ -90,9 +90,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
         translatedCube
     });
     */
-    //auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
-    auto* quadric_sphere = new G4HalfUnionSolid(quadricUnionList, "quadric");
-    auto* logicShape = new G4LogicalVolume(quadric_sphere,
+    auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
+    //auto* quadric_sphere = new G4HalfUnionSolid(quadricUnionList, "quadric");
+    auto* logicShape = new G4LogicalVolume(megaCube,
                                             shape2_mat,
                                             "Shape");
     new G4PVPlacement(nullptr,  // no rotation

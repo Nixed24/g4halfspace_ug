@@ -225,11 +225,13 @@ G4SurfaceMeshCGAL* G4HalfIntersectionSolid::GetSurfaceMesh() {
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;
         sm1 = sm1->Intersection(sm2, valid);
+        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-intersection facets = " << sm1->NumberOfFaces() << std::endl;
     }
     for(const auto &s : subtractionSurfaces_) {
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;
         sm1 = sm1->Subtraction(sm2, valid);
+        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-subtraction facets = " << sm1->NumberOfFaces() << std::endl;
     }
 
     return sm1;

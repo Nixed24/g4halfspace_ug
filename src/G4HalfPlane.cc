@@ -96,6 +96,8 @@ G4SurfaceMeshCGAL* G4HalfPlane::GetSurfaceMesh() {
 
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(normal.x() * distance, normal.y() * distance, normal.z() * distance),
                                          Vector_3_ECER(normal.x(), normal.y(), normal.z())));
-
+    auto DEBUG_MESH = G4SurfaceMeshCGAL(nef);
+    G4cout << "G4HalfPlane::GetSurfaceMesh, faces on nef = " << nef.number_of_facets() <<
+        ", faces on G4SurfaceMeshCGAL = " << DEBUG_MESH.NumberOfFaces() << G4endl;
     return (new G4SurfaceMeshCGAL(nef));
 }
