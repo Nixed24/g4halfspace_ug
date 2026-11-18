@@ -23,7 +23,7 @@
 
 #include <vector>
 
-// #define G4CGAL_DEBUG
+#define G4CGAL_DEBUG
 
 G4SurfaceMeshCGAL::G4SurfaceMeshCGAL() : G4VSurfaceMesh() {
   sm = Surface_mesh_3();
@@ -167,9 +167,9 @@ G4SurfaceMeshCGAL* G4SurfaceMeshCGAL::Union(G4SurfaceMeshCGAL* s1, G4bool &valid
   Surface_mesh_3 s2 = Surface_mesh_3();
   valid = CGAL::Polygon_mesh_processing::corefine_and_compute_union(sm, s1->sm, s2);
 
-#ifdef G4CGAL_DEBUG
-  G4cout << "G4SurfaceMeshCGAL::Union> valid " << valid << G4endl;
-#endif
+  #ifdef G4CGAL_DEBUG
+    G4cout << "G4SurfaceMeshCGAL::Union> valid " << valid << G4endl;
+  #endif
 
   G4SurfaceMeshCGAL* res = new G4SurfaceMeshCGAL();
   res->sm = s2;
