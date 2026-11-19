@@ -27,6 +27,7 @@ include(${Geant4_USE_FILE})
 #----------------------------------------------------------------------------
 # Setup Geant4 include directories and compile definitions
 find_package(CGAL 5 REQUIRED)
+find_package(OpenCASCADE REQUIRED)
 #find_package(Catch2 REQUIRED)
 #find_package(Eigen3 REQUIRED NO_MODULE)
 #----------------------------------------------------------------------------
@@ -39,7 +40,9 @@ file(GLOB HalfSpaceSources ${PROJECT_SOURCE_DIR}/src/*cc)
 file(GLOB HalfSpaceHeaders ${PROJECT_SOURCE_DIR}/include/*.hh)
 add_library(g4halfspace SHARED ${HalfSpaceSources} ${HalfSpaceHeaders})
 target_compile_options(g4halfspace PRIVATE -Werror )
-target_link_libraries(g4halfspace ${Geant4_LIBRARIES} CGAL::CGAL)
+target_include_directories(g4halfspace PRIVATE ${OpenCASCADE_INCLUDE_DIR})
+target_link_libraries(g4halfspace ${Geant4_LIBRARIES} CGAL::CGAL
+        ${OpenCASCADE_LIBRARIES})
 
 file(GLOB HalfSpaceTestSources ${PROJECT_SOURCE_DIR}/test/*cc)
 file(GLOB HalfSpaceTestHeaders ${PROJECT_SOURCE_DIR}/test/*hh)
