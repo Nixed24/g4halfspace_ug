@@ -50,6 +50,14 @@ add_executable(g4halfspace_test ${HalfSpaceTestSources} ${HalfSpaceTestHeaders})
 target_compile_options(g4halfspace_test PRIVATE -Werror)
 target_link_libraries(g4halfspace_test ${Geant4_LIBRARIES} g4halfspace)
 
+file(GLOB CADTestSources ${PROJECT_SOURCE_DIR}/test_cad/*cc)
+file(GLOB CADTestHeaders ${PROJECT_SOURCE_DIR}/test_cad/*hh)
+add_executable(test_cad ${CADTestSources} ${CADTestHeaders})
+target_compile_options(test_cad PRIVATE -Werror)
+target_include_directories(test_cad PRIVATE ${OpenCASCADE_INCLUDE_DIR})
+target_link_libraries(test_cad ${Geant4_LIBRARIES} g4halfspace
+        ${OpenCASCADE_LIBRARIES})
+
 # Copy over macros
 set(SCRIPTS vis.mac)
 foreach(_script ${SCRIPTS})
