@@ -22,17 +22,17 @@ int main(int argc, char** argv)
 
   auto* runManager = G4RunManagerFactory::CreateRunManager();
 
-    G4cout << "BEGIN SPHERE TEST" << G4endl;
+    //G4cout << "BEGIN SPHERE TEST" << G4endl;
     auto sphere = G4HalfQuadric();
     sphere.set_R(-3);
     G4RotationMatrix rotation;
     rotation.rotateZ(30*deg);
-    G4cout << "MID SPHERE TEST" << G4endl;
+    //G4cout << "MID SPHERE TEST" << G4endl;
     G4AffineTransform rotate(rotation);
     sphere.Transform(rotate);
     //G4ThreeVector eigenvals;
     //sphere.GetRotationMatrix(eigenvals);
-    G4cout << "END SPHERE TEST" << G4endl;
+    //G4cout << "END SPHERE TEST" << G4endl;
   runManager->SetUserInitialization(new DetectorConstruction);
   runManager->SetUserInitialization(new ActionInitialization);
   runManager->SetUserInitialization(new FTFP_BERT);

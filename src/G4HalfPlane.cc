@@ -83,19 +83,37 @@ G4SurfaceMeshCGAL* G4HalfPlane::GetSurfaceMesh() {
     Nef_polyhedron_3_ECER nef = Nef_polyhedron_3_ECER(Nef_polyhedron_3_ECER::COMPLETE);
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(1000000000,0,0),
                                          Vector_3_ECER(1, 0, 0)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 1, faces on nef = " << nef.number_of_facets() << G4endl;
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(-1000000000,0,0),
                                          Vector_3_ECER(-1, 0, 0)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 2, faces on nef = " << nef.number_of_facets() << G4endl;
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,1000000000,0),
                                          Vector_3_ECER(0, 1, 0)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 3, faces on nef = " << nef.number_of_facets() << G4endl;
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,-1000000000,0),
                                          Vector_3_ECER(0, -1, 0)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 4, faces on nef = " << nef.number_of_facets() << G4endl;
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,0,1000000000),
                                          Vector_3_ECER(0, 0, 1)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 5, faces on nef = " << nef.number_of_facets() << G4endl;
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(0,0,-1000000000),
                                          Vector_3_ECER(0, 0, -1)));
+    //G4cout << "G4HalfPlane::GetSurfaceMesh, bound 6, faces on nef = " << nef.number_of_facets() << G4endl;
 
     nef *= Nef_polyhedron_3_ECER(Plane_3_ECER(Point_3_ECER(normal.x() * distance, normal.y() * distance, normal.z() * distance),
                                          Vector_3_ECER(normal.x(), normal.y(), normal.z())));
-
-    return (new G4SurfaceMeshCGAL(nef));
+    auto DEBUG_MESH = G4SurfaceMeshCGAL(nef);
+    /*
+    G4cout << "G4HalfPlane::GetSurfaceMesh, add plane, faces on nef = " << nef.number_of_facets() <<
+        ", faces on G4SurfaceMeshCGAL = " << DEBUG_MESH.NumberOfFaces() << G4endl;
+    DEBUG_MESH.DebugOutput();
+    G4cout << "Normal: (" << normal.x() << ", " << normal.y() << ", " << normal.z() << ")" << G4endl;
+    for (int i = 0; i < DEBUG_MESH.NumberOfVertices(); ++i)
+    {
+        std::vector<G4double> vertex = DEBUG_MESH.GetVertex(i);
+        G4cout << "Vertex " << i << ": (" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ")" << G4endl;
+    }
+    */
+    DEBUG_MESH.WriteMesh("final_mesh.off");
+    return (new G4SurfaceMeshCGAL(DEBUG_MESH));
 }

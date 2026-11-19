@@ -74,7 +74,7 @@ G4Polyhedron* G4VSurfaceMesh::GetG4Polyhedron() {
     }
   }
   poly->SetReferences();
-
+  G4cout << "G4VSurfaceMesh::GetG4Polyhedron, facets = "<< poly->GetNoFacets() << G4endl;
   return poly;
 }
 
