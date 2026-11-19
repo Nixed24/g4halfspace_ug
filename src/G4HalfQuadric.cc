@@ -433,9 +433,53 @@ G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) c
   return rotation;
 }
 
-G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const
-{
-  return kSphere;
+G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
+  Eigen::Matrix4d M;
+  Eigen::Matrix3d eQ;
+  M << Q(0,0), Q(0,1), Q(0,2), P[0],
+       Q(1,0), Q(1,1), Q(1,2), P[1],
+       Q(2,0), Q(2,1), Q(2,2), P[2],
+       P[0], P[1], P[2], R;
+  eQ << Q(0,0), Q(0,1), Q(0,2),
+        Q(1,0), Q(1,1), Q(1,2),
+        Q(2,0), Q(2,1), Q(2,2);
+
+  Eigen::FullPivLU<Eigen::Matrix4d> M_decomp(M);
+  Eigen::FullPivLU<Eigen::Matrix3d> Q_decomp(eQ);
+
+  G4long rankM = M_decomp.rank();
+  G4long rankQ = Q_decomp.rank();
+
+  G4double Mdet = M.determinant();
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> Msolver(M);
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> Qsolver(eQ);
+
+  if (Msolver.info() != Eigen::Success || Qsolver.info() != Eigen::Success)
+  {
+    throw std::runtime_error("G4HalfQuadri::QuadricType: Eigenvalue calculation failed.");
+  }
+
+  const Eigen::Vector4d &Meigenvalues = Msolver.eigenvalues();
+  const Eigen::Vector3d &Qeigenvalues = Qsolver.eigenvalues();
+
+  // SSEQ/M : Same Sign Eigenvalues Q/M
+  G4bool SSEQ = Qeigenvalues.cwiseAbs() == Qeigenvalues || Qeigenvalues.cwiseAbs() == -Qeigenvalues;
+  G4bool SSEM = Meigenvalues.cwiseAbs() == Meigenvalues || Meigenvalues.cwiseAbs() == -Meigenvalues;
+
+  if (rankM == 1) return kCoincidentPlanes;
+  if (rankM == 2 && rankQ == 1 && !SSEM) return kParabolicCylinder;
+  if (rankM == 2 && rankQ == 2 && !SSEM && !SSEQ) return kIntersectingPlanes;
+  if (rankM == 3 && rankQ == 1 && !SSEM) return kParabolicCylinder;
+  if (rankM == 3 && rankQ == 2 && !SSEM && SSEQ) return kEllipticCylinder;
+  if (rankM == 3 && rankQ == 3 && !SSEM && !SSEQ) return kQuadricCone;
+  if (rankM == 4 && rankQ == 2 && Mdet > 0 && !SSEM && !SSEQ) return kEllipticParaboloid;
+  if (rankM == 4 && rankQ == 2 && Mdet < 0 && !SSEM && SSEQ) return kHyperbolicParaboloid;
+  if (rankM == 4 && rankQ == 3 && Mdet > 0 && !SSEM && !SSEQ) return kHyperboloidOneSheet;
+  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && !SSEQ) return kHyperboloidTwoSheets;
+  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && SSEQ) return kEllipsoid;
+
+  throw std::logic_error("G4HalfQuadric::IdentifyQuadric: Cannot identify quadric type, quadric form is invalid.");
 }
 
 std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
