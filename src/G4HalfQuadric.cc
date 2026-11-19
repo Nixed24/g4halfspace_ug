@@ -460,6 +460,7 @@ G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
     throw std::runtime_error("G4HalfQuadri::QuadricType: Eigenvalue calculation failed.");
   }
 
+  // Maybe sort these
   const Eigen::Vector4d &Meigenvalues = Msolver.eigenvalues();
   const Eigen::Vector3d &Qeigenvalues = Qsolver.eigenvalues();
 
@@ -480,6 +481,57 @@ G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
   if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && SSEQ) return kEllipsoid;
 
   throw std::logic_error("G4HalfQuadric::IdentifyQuadric: Cannot identify quadric type, quadric form is invalid.");
+}
+
+void G4HalfQuadric::GetQuadricBound(G4ThreeVector& maxBounds,
+                                    G4ThreeVector& minBounds,
+                                    const G4ThreeVector& boundLimit) const
+{
+  // All currently under the assumption that the eigenvalues are in order of x, y, z
+  const G4int quadricType = this->IdentifyQuadricType();
+  G4ThreeVector eigenvalues;
+
+  const G4RotationMatrix rotationMatrix = this->GetRotationMatrix(eigenvalues);
+
+  G4double xBound;
+  G4double yBound;
+  switch (quadricType)
+  {
+    case kEllipsoid:
+      // Bounds are +/- 1/sqrt(eigenvalue)
+      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), 1/sqrt(eigenvalues[2])};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kEllipticParaboloid:
+      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), boundLimit[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kHyperboloidOneSheet:
+      // z eigenValue should be < 0 so this shouldn't break
+      xBound = (1/sqrt(eigenvalues[0]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      yBound = (1/sqrt(eigenvalues[1]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      maxBounds = {xBound, yBound, maxBounds[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kHyperboloidTwoSheets:
+      xBound = (1/sqrt(eigenvalues[0]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      yBound = (1/sqrt(eigenvalues[1]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      maxBounds = {xBound, yBound, maxBounds[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    default:
+      G4cout << "Unbounded quadric type, settting boudn to world limits." << G4endl;
+      maxBounds = boundLimit;
+      minBounds = -boundLimit;
+  }
 }
 
 std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
