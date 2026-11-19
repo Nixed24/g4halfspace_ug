@@ -30,6 +30,9 @@ public:
 
     virtual void Transform(const G4AffineTransform& t) = 0;
 
+    virtual void GetExtent(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const = 0;
+
+
     virtual std::ostream& StreamInfo(std::ostream&) const;
     virtual G4SurfaceMeshCGAL* GetSurfaceMesh() = 0;
 };
