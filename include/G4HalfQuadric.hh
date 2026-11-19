@@ -20,18 +20,17 @@ class G4HalfQuadric : public G4HalfSurface {
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
 
     enum QuadricType
-    {
-      kCoincidentPlanes,
-      kParabolicCylinder,
-      kIntersectingPlanes,
-      kEllipticCylinder,
+    { // Excluding imaginary types
+      kEllipsoid,
+      kHyperboloidOneSheet,
+      kHyperboloidTwoSheets,
+      kQuadricCone,
       kEllipticParaboloid,
       kHyperbolicParaboloid,
-      kQuadricCone,
-      kHyperboloidTwoSheets,
-      kHyperboloidOneSheet,
-      kEllipsoid,
-      kNullType
+      kEllipticCylinder,
+      kIntersectingPlanes,
+      kParabolicCylinder,
+      kCoincidentPlanes
     };
 
   public:
@@ -58,6 +57,7 @@ class G4HalfQuadric : public G4HalfSurface {
 
     G4RotationMatrix GetRotationMatrix(G4ThreeVector &QEigenvalues) const;
     QuadricType IdentifyQuadricType() const;
+    void GetQuadricBound(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const;
 
     // This will involve taking a gradient of the implicit function and evaluating it at p
     G4ThreeVector SurfaceNormal(const G4ThreeVector& p) const override;
@@ -68,6 +68,7 @@ class G4HalfQuadric : public G4HalfSurface {
     std::ostream& StreamInfo(std::ostream&) const override;
 
     G4SurfaceMeshCGAL* GetSurfaceMesh() override;
+
 };
 
 #endif
