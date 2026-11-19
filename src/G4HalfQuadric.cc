@@ -469,7 +469,7 @@ G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
 
   if (Msolver.info() != Eigen::Success || Qsolver.info() != Eigen::Success)
   {
-    throw std::runtime_error("G4HalfQuadri::QuadricType: Eigenvalue calculation failed.");
+    throw std::runtime_error("G4HalfQuadric::QuadricType: Eigenvalue calculation failed.");
   }
 
   const Eigen::Vector4d &Meigenvalues = Msolver.eigenvalues();

@@ -218,20 +218,31 @@ std::ostream& G4HalfIntersectionSolid::StreamInfo(std::ostream& os) const
 G4SurfaceMeshCGAL* G4HalfIntersectionSolid::GetSurfaceMesh() {
 
     G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh" << G4endl;
-
-    G4SurfaceMeshCGAL *sm1 = new G4SurfaceMeshCGAL();
-
+    G4bool first = true;
+    auto sm1 = new G4SurfaceMeshCGAL();
     for(const auto &s : intersectionSurfaces_) {
+        if (first)
+        {
+            sm1 = s->GetSurfaceMesh();
+            first = false;
+        }
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;
         sm1 = sm1->Intersection(sm2, valid);
-        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-intersection facets = " << sm1->NumberOfFaces() << std::endl;
+        //G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-intersection facets = " << sm1->NumberOfFaces() << G4endl;
+        //G4cout << "valid variable output : " << valid << G4endl;
     }
     for(const auto &s : subtractionSurfaces_) {
+        if (first)
+        {
+            sm1 = s->GetSurfaceMesh();
+            first = false;
+        }
         auto sm2 = s->GetSurfaceMesh();
         G4bool valid;
         sm1 = sm1->Subtraction(sm2, valid);
-        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-subtraction facets = " << sm1->NumberOfFaces() << std::endl;
+        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-subtraction facets = " << sm1->NumberOfFaces() << G4endl;
+        G4cout << "valid variable output : " << valid << G4endl;
     }
 
     return sm1;

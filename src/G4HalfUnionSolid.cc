@@ -138,7 +138,7 @@ G4SurfaceMeshCGAL* G4HalfUnionSolid::GetSurfaceMesh() {
     G4cout << "G4HalfUnionSolid::GetSurfaceMesh" << G4endl;
 
     G4SurfaceMeshCGAL *sm1 = new G4SurfaceMeshCGAL();
-
+    // dont need a first here because union with a null mesh just gives you the mesh back
     for(const auto &s : unionSolids_)
     {
         auto sm2 = s->GetSurfaceMesh();

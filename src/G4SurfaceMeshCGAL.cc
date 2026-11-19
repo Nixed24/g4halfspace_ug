@@ -23,8 +23,6 @@
 
 #include <vector>
 
-#define G4CGAL_DEBUG
-
 G4SurfaceMeshCGAL::G4SurfaceMeshCGAL() : G4VSurfaceMesh() {
   sm = Surface_mesh_3();
 }

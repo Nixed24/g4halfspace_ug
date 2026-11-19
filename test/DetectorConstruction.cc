@@ -82,7 +82,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
     const G4AffineTransform translation(G4ThreeVector(-0.5 * m, -0.5 * m, -0.5 * m));
     translatedCube->Transform(translation);
 
-    const std::vector<G4HalfSolid*> unionList({cube});
+    const std::vector<G4HalfSolid*> unionList({cube, translatedCube});
     const std::vector<G4HalfSolid*> quadricUnionList({quadric});
     /*
     const std::vector<G4HalfSolid*> unionList({
