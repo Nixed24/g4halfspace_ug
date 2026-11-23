@@ -11,6 +11,7 @@
 #include "G4HalfQuadric.hh"
 #include "G4HalfUnionSolid.hh"
 #include "G4HalfPlane.hh"
+#include "G4HalfEllipsoid.hh"
 
 
 G4HalfIntersectionSolid* makeCube(G4double halfLength)
@@ -75,14 +76,15 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 
     G4ThreeVector shapePosition;
 
+    /*
     G4HalfIntersectionSolid* cube = makeCube(0.5 * m);
     G4HalfIntersectionSolid* translatedCube = makeCube(0.5 * m);
     G4HalfIntersectionSolid* quadric = makeQuadric(1000000);
 
     const G4AffineTransform translation(G4ThreeVector(-0.5 * m, -0.5 * m, -0.5 * m));
-    translatedCube->Transform(translation);
+    const auto translatedCube2 = translatedCube->Transform(translation);
 
-    const std::vector<G4HalfSolid*> unionList({cube, translatedCube});
+    const std::vector<G4HalfSolid*> unionList({cube, translatedCube2});
     const std::vector<G4HalfSolid*> quadricUnionList({quadric});
     /*
     const std::vector<G4HalfSolid*> unionList({
@@ -90,9 +92,13 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
         translatedCube
     });
     */
-    auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
+
+    const auto ellipsoid = new G4HalfEllipsoid(0.5*m, 0.45*m, 0.8*m, {0,0,0});
+    auto* esoid = new G4HalfIntersectionSolid({ellipsoid}, {}, "Ellipsoid");
+
+    //auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
     //auto* quadric_sphere = new G4HalfUnionSolid(quadricUnionList, "quadric");
-    auto* logicShape = new G4LogicalVolume(megaCube,
+    auto* logicShape = new G4LogicalVolume(esoid,
                                             shape2_mat,
                                             "Shape");
     new G4PVPlacement(nullptr,  // no rotation
