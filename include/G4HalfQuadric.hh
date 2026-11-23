@@ -19,6 +19,7 @@ class G4HalfQuadric : public G4HalfSurface {
     CLHEP::HepVector P {CLHEP::HepVector(3,0)};
     G4double R {-1}; // subsequently R = -1 gives a unit sphere at the origin
 
+  public:
     enum QuadricType
     { // Excluding imaginary types
       kEllipsoid,
@@ -30,12 +31,11 @@ class G4HalfQuadric : public G4HalfSurface {
       kEllipticCylinder,
       kIntersectingPlanes,
       kParabolicCylinder,
-      kCoincidentPlanes
+      kCoincidentPlanes,
+      kSinglePlane
     };
 
-  public:
-
-    CLHEP::HepMatrix get_Q() const;
+  CLHEP::HepMatrix get_Q() const;
     CLHEP::HepVector get_P() const;
     G4double get_R() const;
     void set_Q(const CLHEP::HepMatrix& new_Q);
@@ -57,7 +57,7 @@ class G4HalfQuadric : public G4HalfSurface {
 
     G4RotationMatrix GetRotationMatrix(G4ThreeVector &QEigenvalues) const;
     QuadricType IdentifyQuadricType() const;
-    void GetQuadricBound(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const;
+    void GetExtent(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const override;
 
     // This will involve taking a gradient of the implicit function and evaluating it at p
     G4ThreeVector SurfaceNormal(const G4ThreeVector& p) const override;

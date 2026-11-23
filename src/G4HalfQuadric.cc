@@ -495,7 +495,7 @@ G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
   throw std::logic_error("G4HalfQuadric::IdentifyQuadric: Cannot identify quadric type, quadric form is invalid.");
 }
 
-void G4HalfQuadric::GetQuadricBound(G4ThreeVector& maxBounds,
+void G4HalfQuadric::GetExtent(G4ThreeVector& maxBounds,
                                     G4ThreeVector& minBounds,
                                     const G4ThreeVector& boundLimit) const
 {
@@ -519,7 +519,7 @@ void G4HalfQuadric::GetQuadricBound(G4ThreeVector& maxBounds,
     case kEllipticParaboloid:
       maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), boundLimit[2]};
       maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds;
+      minBounds = -maxBounds; 
       break;
 
     case kHyperboloidOneSheet:
