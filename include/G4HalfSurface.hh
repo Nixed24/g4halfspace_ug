@@ -28,7 +28,7 @@ public:
     virtual G4ThreeVector ClosestSurfacePoint(const G4ThreeVector& p) const = 0;
     virtual G4ThreeVector SurfaceNormal(const G4ThreeVector& /*p*/) const = 0;
 
-    virtual void Transform(const G4AffineTransform& t) = 0;
+    virtual G4HalfSurface* Transform(const G4AffineTransform& t) = 0; // Returns copy
 
     virtual void GetExtent(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const = 0;
 

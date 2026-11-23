@@ -63,7 +63,7 @@ class G4HalfQuadric : public G4HalfSurface {
     G4ThreeVector SurfaceNormal(const G4ThreeVector& p) const override;
     G4ThreeVector ClosestSurfacePoint(const G4ThreeVector& p) const override;
 
-    void Transform(const G4AffineTransform& t) override;
+    G4HalfSurface* Transform(const G4AffineTransform& t) override;
 
     std::ostream& StreamInfo(std::ostream&) const override;
 

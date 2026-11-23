@@ -572,7 +572,7 @@ G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
   return candidate_points[element_index];
 }
 
-void G4HalfQuadric::Transform(const G4AffineTransform& t)
+G4HalfSurface* G4HalfQuadric::Transform(const G4AffineTransform& t)
 {
   G4RotationMatrix rotate = t.NetRotation(); // M_ij
   G4ThreeVector translate = t.NetTranslation(); // T_j
@@ -591,9 +591,8 @@ void G4HalfQuadric::Transform(const G4AffineTransform& t)
   CLHEP::HepMatrix Q_prime = rotate_cast.T() * this->Q * rotate_cast;
   CLHEP::HepVector P_prime = 2 * (rotate_cast.T() * this->Q * translate_cast) + (rotate_cast.T() * (this->P));
   G4double R_prime = dot(this->P, translate_cast) + dot(this->Q.T() * translate_cast, translate_cast) + this->R; // was missing this->R
-  this->Q = Q_prime;
-  this->P = P_prime;
-  this->R = R_prime;
+
+  return new G4HalfQuadric(Q_prime, P_prime, R_prime);
 }
 
 G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const

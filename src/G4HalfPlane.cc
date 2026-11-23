@@ -68,13 +68,15 @@ G4ThreeVector G4HalfPlane::ClosestSurfacePoint(const G4ThreeVector& p) const
 }
 
 
-void G4HalfPlane::Transform(const G4AffineTransform& t)
+G4HalfSurface* G4HalfPlane::Transform(const G4AffineTransform& t)
 {
     const G4ThreeVector& normalPoint = this->distance*this->normal;
     const G4ThreeVector& transformedPoint = t.TransformPoint(normalPoint);
 
-    this->normal = t.TransformAxis(normal).unit();
-    this->distance = normal.dot(transformedPoint);
+    G4ThreeVector transformedNormal = t.TransformAxis(normal).unit();
+    G4double transformedDistance = normal.dot(transformedPoint);
+
+    return new G4HalfPlane(transformedNormal, transformedDistance);
 }
 
 void G4HalfPlane::GetExtent(G4ThreeVector &maxBounds, G4ThreeVector &minBounds, const G4ThreeVector &boundLimit) const
