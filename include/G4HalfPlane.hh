@@ -24,6 +24,8 @@ public:
 
     void Transform(const G4AffineTransform& t) override;
 
+    void GetExtent(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const override;
+
     G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 
 };
