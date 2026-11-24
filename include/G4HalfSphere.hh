@@ -1,7 +1,6 @@
-#ifndef G4_HALF_ELLIPSOID
-#define G4_HALF_ELLIPSOID
+#ifndef G4_HALF_SPHERE
+#define G4_HALF_SPHERE
 
-#include "G4HalfQuadric.hh"
 #include "G4HalfSurface.hh"
 
 class G4HalfSphere : public G4HalfSurface
@@ -11,10 +10,8 @@ class G4HalfSphere : public G4HalfSurface
     G4double radius_;
     G4ThreeVector centre_;
 
-    G4HalfQuadric GetQuadric() const;
-
 public:
-    G4HalfSphere(const G4double& semiMajor, const G4double& semiMinor, const G4double& focus, const G4ThreeVector& centre);
+    G4HalfSphere(const G4double& radius, const G4ThreeVector& centre);
     ~G4HalfSphere() override = default;
 
     G4double ImplicitFunction(const G4ThreeVector &p) const override;
