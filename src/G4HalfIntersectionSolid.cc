@@ -181,11 +181,25 @@ void G4HalfIntersectionSolid::GetOnSurfaceNormal(const G4ThreeVector& p, G4Three
 }
 
 
-void G4HalfIntersectionSolid::Transform(const G4AffineTransform& t) const
+G4HalfSolid* G4HalfIntersectionSolid::Transform(const G4AffineTransform& t) const
 {
-    for (auto &s : intersectionSurfaces_) s->Transform(t);
+    std::vector<G4HalfSurface*> transformedIntersectionSurfaces;
+    std::vector<G4HalfSurface*> transformedSubtractionSurfaces;
 
-    for (auto &s : subtractionSurfaces_) s->Transform(t);
+    transformedIntersectionSurfaces.reserve(intersectionSurfaces_.size());
+    transformedSubtractionSurfaces.reserve(subtractionSurfaces_.size());
+
+    for (const auto &s : intersectionSurfaces_)
+    {
+        transformedIntersectionSurfaces.push_back(s->Transform(t));
+    }
+
+    for (const auto &s : subtractionSurfaces_)
+    {
+        transformedSubtractionSurfaces.push_back(s->Transform(t));
+    }
+
+    return new G4HalfIntersectionSolid(transformedIntersectionSurfaces, transformedSubtractionSurfaces, this->GetName());
 }
 
 

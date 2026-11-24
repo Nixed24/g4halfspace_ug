@@ -68,15 +68,33 @@ G4ThreeVector G4HalfPlane::ClosestSurfacePoint(const G4ThreeVector& p) const
 }
 
 
-void G4HalfPlane::Transform(const G4AffineTransform& t)
+G4HalfSurface* G4HalfPlane::Transform(const G4AffineTransform& t)
 {
     const G4ThreeVector& normalPoint = this->distance*this->normal;
     const G4ThreeVector& transformedPoint = t.TransformPoint(normalPoint);
 
-    this->normal = t.TransformAxis(normal).unit();
-    this->distance = normal.dot(transformedPoint);
+    G4ThreeVector transformedNormal = t.TransformAxis(normal).unit();
+    G4double transformedDistance = normal.dot(transformedPoint);
+
+    return new G4HalfPlane(transformedNormal, transformedDistance);
 }
 
+void G4HalfPlane::GetExtent(G4ThreeVector &maxBounds, G4ThreeVector &minBounds, const G4ThreeVector &boundLimit) const
+{
+    const G4double maxRawBoundX = (distance + normal[1]*boundLimit[1] + normal[2]*boundLimit[2]) / boundLimit[0];
+    const G4double maxRawBoundY = (distance + normal[0]*boundLimit[0] + normal[2]*boundLimit[2]) / boundLimit[1];
+    const G4double maxRawBoundZ = (distance + normal[0]*boundLimit[0] + normal[1]*boundLimit[1]) / boundLimit[2];
+    const G4double minRawBoundX = (distance - normal[1]*boundLimit[1] - normal[2]*boundLimit[2]) / boundLimit[0];
+    const G4double minRawBoundY = (distance - normal[0]*boundLimit[0] - normal[2]*boundLimit[2]) / boundLimit[1];
+    const G4double minRawBoundZ = (distance - normal[0]*boundLimit[0] - normal[1]*boundLimit[1]) / boundLimit[2];
+
+    maxBounds[0] = std::min(boundLimit[0], maxRawBoundX);
+    maxBounds[1] = std::min(boundLimit[1], maxRawBoundY);
+    maxBounds[2] = std::min(boundLimit[2], maxRawBoundZ);
+    minBounds[0] = std::max(-boundLimit[0], minRawBoundX);
+    minBounds[1] = std::max(-boundLimit[1], minRawBoundY);
+    minBounds[2] = std::max(-boundLimit[2], minRawBoundZ);
+}
 
 G4SurfaceMeshCGAL* G4HalfPlane::GetSurfaceMesh() {
 

@@ -50,7 +50,7 @@ public:
 
     G4ThreeVector SurfaceNormal(const G4ThreeVector& p) const override;
 
-    virtual void Transform(const G4AffineTransform& t) const = 0;
+    virtual G4HalfSolid* Transform(const G4AffineTransform& t) const = 0;
 
     virtual G4SurfaceMeshCGAL* GetSurfaceMesh() = 0;
 };

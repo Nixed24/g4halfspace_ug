@@ -22,7 +22,9 @@ public:
     G4ThreeVector ClosestSurfacePoint(const G4ThreeVector& p) const override;
     G4ThreeVector SurfaceNormal(const G4ThreeVector& /*p*/) const override {return normal;}
 
-    void Transform(const G4AffineTransform& t) override;
+    G4HalfSurface* Transform(const G4AffineTransform& t) override;
+
+    void GetExtent(G4ThreeVector& maxBounds, G4ThreeVector& minBounds, const G4ThreeVector& boundLimit) const override;
 
     G4SurfaceMeshCGAL* GetSurfaceMesh() override;
 

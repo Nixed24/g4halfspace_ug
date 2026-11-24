@@ -115,9 +115,17 @@ G4double G4HalfUnionSolid::DistanceToOut(const G4ThreeVector& p) const
     return DistanceToOut(p, false, nullptr);
 }
 
-void G4HalfUnionSolid::Transform(const G4AffineTransform& t) const
+G4HalfSolid* G4HalfUnionSolid::Transform(const G4AffineTransform& t) const
 {
-    for (auto &solid : unionSolids_) solid->Transform(t);
+    std::vector<G4HalfSolid*> newUnions;
+    newUnions.reserve(this->unionSolids_.size());
+
+    for (const auto &solid : unionSolids_)
+    {
+        newUnions.push_back(solid->Transform(t));
+    }
+
+    return new G4HalfUnionSolid(newUnions, this->GetName());
 }
 
 
