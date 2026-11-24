@@ -70,7 +70,7 @@ std::vector<G4double> G4HalfEllipsoid::GetLambdas(const G4ThreeVector& p) const
     const G4double p1 = 2*std::pow(a, 4)*std::pow(b, 4)*std::pow(c, 2) + 2*std::pow(a, 4)*std::pow(b, 2)*std::pow(c, 4)
                         + 2*std::pow(a, 2)*std::pow(b, 4)*std::pow(c, 4) + std::pow(rx, 2)*(-2*std::pow(a, 2)*std::pow(b, 4)*std::pow(c, 2)
                         - 2*std::pow(a, 2)*std::pow(b, 2)*std::pow(c, 4)) + std::pow(ry, 2)*(-2*std::pow(a, 4)*std::pow(b, 2)*std::pow(c, 2)
-                        - 2*std::pow(a, 2)*std::pow(b, 2)*std::pow(c, 4)) + std::pow(rz, 2)*(-2*std::pow(a, 4)*std::pow(b, 2)*std::pow(c, 2) \
+                        - 2*std::pow(a, 2)*std::pow(b, 2)*std::pow(c, 4)) + std::pow(rz, 2)*(-2*std::pow(a, 4)*std::pow(b, 2)*std::pow(c, 2)
                         - 2*std::pow(a, 2)*std::pow(b, 4)*std::pow(c, 2));
     const G4double p0 = -std::pow(a, 4)*std::pow(b, 4)*std::pow(c, 4)
                         + std::pow(a, 4)*std::pow(b, 4)*std::pow(c, 2)*std::pow(rz, 2)
@@ -219,8 +219,16 @@ G4HalfSurface* G4HalfEllipsoid::Transform(const G4AffineTransform& t)
 G4SurfaceMeshCGAL* G4HalfEllipsoid::GetSurfaceMesh()
 {
     G4HalfQuadric ellipsoid = this->GetQuadric();
+    G4double radius;
 
-    const G4double radius = std::max({semiMajor_, semiMinor_, focus_});
+    if (centre_.mag() == 0)
+    {
+        radius = std::max({semiMajor_, semiMinor_, focus_});
+    }
+    else
+    {
+        radius = 3000;
+    }
 
     return make_mesh(ellipsoid, radius*radius);
 }

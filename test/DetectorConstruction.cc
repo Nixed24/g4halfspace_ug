@@ -93,7 +93,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
     });
     */
 
-    const auto ellipsoid = new G4HalfEllipsoid(0.5*m, 0.45*m, 0.8*m, {0,0,0});
+    const auto ellipsoid = new G4HalfEllipsoid(1*m, 1*m, 1*m, {0.2*m,-0.2*m,0});
     auto* esoid = new G4HalfIntersectionSolid({ellipsoid}, {}, "Ellipsoid");
 
     //auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
