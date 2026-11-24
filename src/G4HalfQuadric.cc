@@ -16,7 +16,24 @@ G4HalfQuadric::G4HalfQuadric(const CLHEP::HepMatrix& Q, const CLHEP::HepVector& 
   this->set_P(P);
   this->set_R(R);
 }
+G4HalfQuadric::G4HalfQuadric(double qxx, double qxy, double qxz,
+                          double qyy, double qyz,
+                                      double qzz,
+              double px, double py, double pz,
+              double R)
+{
+  CLHEP::HepMatrix q(3,3);
+  q[0][0] = qxx; q[0][1] = qxy; q[0][2] = qxz;
+  q[1][0] = qxy; q[1][1] = qyy; q[1][2] = qyz;
+  q[2][0] = qxz; q[2][1] = qyz; q[2][2] = qzz;
 
+  CLHEP::HepVector p(3);
+  p[0] = px; p[1] = py; p[2] = pz;
+
+  this->set_Q(q);
+  this->set_P(p);
+  this->set_R(R);
+}
 
 std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4ThreeVector& p) const
 {
@@ -32,7 +49,6 @@ std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4Thre
   // Z -> lambda (lagrange multiplier)
   // const G4double characteristic_determinant = (-pow(Z,3)*a*e*i)+pow(Z,2)*e*i+pow(Z,3)*pow(b,2)*i+pow(Z,2)*a*i-Z*i+pow(Z,3)*a*pow(f,2)-pow(Z,2)*pow(f,2)-2*pow(Z,3)*b*c*f+pow(Z,3)*pow(c,2)*e+pow(Z,2)*a*e-Z*e-pow(Z,2)*pow(c,2)-pow(Z,2)*pow(b,2)-Z*a+1;
   // It's a LONG expression
-  // (DONE) 07/11/26 these terms aren't correct; pull the correct ones from poly_redo_test_demo; that also uses b (P/2) instead of P
   const G4double power_6 =
 (-a*pow(b_x,2)*pow(e,2)*pow(i,2))+M_0*pow(a,2)*pow(e,2)*pow(i,2)-pow(a,2)*pow(b_y,2)*e*pow(i,2)+2*a*b*b_x*b_y*e*pow(i,2)
                          +pow(b,2)*pow(b_x,2)*e*pow(i,2)-2*M_0*a*pow(b,2)*e*pow(i,2)+a*pow(b,2)*pow(b_y,2)*pow(i,2)
@@ -562,6 +578,10 @@ G4ThreeVector G4HalfQuadric::SurfaceNormal(const G4ThreeVector& p) const
 G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
 {
   const std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
+  if (candidate_points.empty())
+  {
+    return {};
+  }
   std::vector<G4double> distances;
   for (const auto& candidate_point : candidate_points)
   {
@@ -598,6 +618,10 @@ G4HalfSurface* G4HalfQuadric::Transform(const G4AffineTransform& t)
 G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
 {
   std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
+  if (candidate_points.empty())
+  {
+    return {};
+  }
   std::vector<G4double> candidate_distances;
   for (const auto& candidate_point : candidate_points) // oh cool, copilot generated this
   {
