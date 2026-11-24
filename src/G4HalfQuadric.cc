@@ -241,7 +241,7 @@ void G4HalfQuadric::GetExtent(G4ThreeVector& maxBounds,
     case kEllipticParaboloid:
       maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), boundLimit[2]};
       maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds; 
+      minBounds = -maxBounds;
       break;
 
     case kHyperboloidOneSheet:
