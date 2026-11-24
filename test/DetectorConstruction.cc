@@ -12,6 +12,7 @@
 #include "G4HalfUnionSolid.hh"
 #include "G4HalfPlane.hh"
 #include "G4HalfEllipsoid.hh"
+#include "G4HalfSphere.hh"
 
 
 G4HalfIntersectionSolid* makeCube(G4double halfLength)
@@ -74,7 +75,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 
     G4Material* shape2_mat = nist->FindOrBuildMaterial("G4_BONE_COMPACT_ICRU");
 
-    G4ThreeVector shapePosition;
+    G4ThreeVector shapePosition({0,0,0});
 
     /*
     G4HalfIntersectionSolid* cube = makeCube(0.5 * m);
@@ -93,12 +94,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
     });
     */
 
-    const auto ellipsoid = new G4HalfEllipsoid(1*m, 1*m, 1*m, {0.2*m,-0.2*m,0});
-    auto* esoid = new G4HalfIntersectionSolid({ellipsoid}, {}, "Ellipsoid");
+    const auto sphere = new G4HalfSphere(1*m, shapePosition);
+    auto* sphereSolid = new G4HalfIntersectionSolid({sphere}, {}, "Ellipsoid");
 
     //auto* megaCube = new G4HalfUnionSolid(unionList, "megaCube");
     //auto* quadric_sphere = new G4HalfUnionSolid(quadricUnionList, "quadric");
-    auto* logicShape = new G4LogicalVolume(esoid,
+    auto* logicShape = new G4LogicalVolume(sphereSolid,
                                             shape2_mat,
                                             "Shape");
     new G4PVPlacement(nullptr,  // no rotation
