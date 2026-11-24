@@ -3,6 +3,8 @@
 #include "G4PolynomialSolve.hh"
 #include "G4ImplicitSurfaceCGAL.hh"
 
+#include "G4Ellipsoid.hh"
+
 G4HalfEllipsoid::G4HalfEllipsoid(const G4double &semiMajor,
                                  const G4double &semiMinor,
                                  const G4double &focus,
@@ -218,19 +220,17 @@ G4HalfSurface* G4HalfEllipsoid::Transform(const G4AffineTransform& t)
 
 G4SurfaceMeshCGAL* G4HalfEllipsoid::GetSurfaceMesh()
 {
-    G4HalfQuadric ellipsoid = this->GetQuadric();
-    G4double radius;
+    const auto t = G4Ellipsoid("test", semiMajor_,semiMinor_, focus_);
+    G4Polyhedron *g4poly = t.GetPolyhedron();
+    auto *sm = new G4SurfaceMeshCGAL();
+    sm->Fill(g4poly);
 
-    if (centre_.mag() == 0)
-    {
-        radius = std::max({semiMajor_, semiMinor_, focus_});
-    }
-    else
-    {
-        radius = 3000;
-    }
+    G4ThreeVector axis;
+    G4double angle;
 
-    return make_mesh(ellipsoid, radius*radius);
+    sm->Translate(centre_);
+
+    return sm;
 }
 
 std::ostream &G4HalfEllipsoid::StreamInfo(std::ostream &os) const
