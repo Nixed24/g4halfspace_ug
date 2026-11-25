@@ -159,6 +159,5 @@ G4SurfaceMeshCGAL* G4HalfHyperbolicParaboloid::GetSurfaceMesh()
 {
     G4HalfQuadric quadric = this->GetQuadric();
 
-    // Large finite clipping sphere, analogous to the plane's ±1e9 bounds.
-    return make_mesh(quadric, 1e9*1e9*m*m);
+    return make_mesh(quadric, 1e9*1e9);
 }
