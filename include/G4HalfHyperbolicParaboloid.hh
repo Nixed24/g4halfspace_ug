@@ -10,14 +10,14 @@ class G4HalfHyperbolicParaboloid : public G4HalfSurface
 
     G4double a_;
     G4double b_;
-    G4double c_;
+    G4double c_; // Sets scale for z
 
     std::vector<G4double> GetLambdas(const G4ThreeVector& p) const;
     std::vector<G4ThreeVector> GetLMIntersections(const G4ThreeVector& p) const;
     G4HalfQuadric GetQuadric() const;
 
 public:
-    G4HalfHyperbolicParaboloid(const G4double& a, const G4double& b, const G4double& c)    ;
+    G4HalfHyperbolicParaboloid(const G4double& a, const G4double& b, const G4double& c);
     ~G4HalfHyperbolicParaboloid() override = default;
 
     G4double ImplicitFunction(const G4ThreeVector &p) const override;

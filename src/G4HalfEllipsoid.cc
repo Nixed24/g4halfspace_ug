@@ -226,7 +226,6 @@ G4SurfaceMeshCGAL* G4HalfEllipsoid::GetSurfaceMesh()
     sm->Fill(g4poly);
 
     G4ThreeVector axis;
-    G4double angle;
 
     sm->Translate(centre_);
 

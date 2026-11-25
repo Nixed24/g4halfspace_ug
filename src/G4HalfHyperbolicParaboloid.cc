@@ -4,10 +4,11 @@
 #include "G4PolynomialSolve.hh"
 #include "G4ImplicitSurfaceCGAL.hh"
 
-G4HalfHyperbolicParaboloid::G4HalfHyperbolicParaboloid(const G4double& a, const G4double& b, const G4double& c) : a_(a), b_(b), c_(c)
+G4HalfHyperbolicParaboloid::G4HalfHyperbolicParaboloid(const G4double& a, const G4double& b, const G4double& c)
+: a_(a), b_(b), c_(c)
 {
     if (a == 0 || b == 0 || c == 0)
-        throw std::invalid_argument("G4HalfHyperbolicParaboloid: Constructor only takes non-zero values of a and b.");
+        throw std::invalid_argument("G4HalfHyperbolicParaboloid: Constructor only takes non-zero values of a, b, and c.");
 }
 
 G4HalfQuadric G4HalfHyperbolicParaboloid::GetQuadric() const
@@ -26,10 +27,14 @@ G4HalfQuadric G4HalfHyperbolicParaboloid::GetQuadric() const
 
 std::vector<G4double> G4HalfHyperbolicParaboloid::GetLambdas(const G4ThreeVector& p) const
 {
+    // Coefficients of the Lagrange Multiplier polynomial to get lambda
     const G4double p5 = 1;
     const G4double p4 = -2*std::pow(a_, 2) + 2*std::pow(b_, 2) - 2*c_*p[2];
-    const G4double p3 = std::pow(a_, 4) - 4*std::pow(a_, 2)*std::pow(b_, 2) + std::pow(b_, 4) + p[2]*(4*std::pow(a_, 2)*c_ - 4*std::pow(b_, 2)*c_);
-    const G4double p2 = 2*std::pow(a_, 4)*std::pow(b_, 2) - 2*std::pow(a_, 2)*std::pow(b_, 4) + 2*std::pow(a_, 2)*c_*std::pow(p[0], 2) - 2*std::pow(b_, 2)*c_*std::pow(p[1], 2) + p[2]*(-2*std::pow(a_, 4)*c_ + 8*std::pow(a_, 2)*std::pow(b_, 2)*c_ - 2*std::pow(b_, 4)*c_);
+    const G4double p3 = std::pow(a_, 4) - 4*std::pow(a_, 2)*std::pow(b_, 2) + std::pow(b_, 4) +
+                        p[2]*(4*std::pow(a_, 2)*c_ - 4*std::pow(b_, 2)*c_);
+    const G4double p2 = 2*std::pow(a_, 4)*std::pow(b_, 2) - 2*std::pow(a_, 2)*std::pow(b_, 4)
+                        + 2*std::pow(a_, 2)*c_*std::pow(p[0], 2) - 2*std::pow(b_, 2)*c_*std::pow(p[1], 2)
+                        + p[2]*(-2*std::pow(a_, 4)*c_ + 8*std::pow(a_, 2)*std::pow(b_, 2)*c_ - 2*std::pow(b_, 4)*c_);
     const G4double p1 = std::pow(a_, 4)*std::pow(b_, 4) + 4*std::pow(a_, 2)*std::pow(b_, 2)*c_*std::pow(p[0], 2) + 4*std::pow(a_, 2)*std::pow(b_, 2)*c_*std::pow(p[1], 2) + p[2]*(-4*std::pow(a_, 4)*std::pow(b_, 2)*c_ + 4*std::pow(a_, 2)*std::pow(b_, 4)*c_);
     const G4double p0 = -2*std::pow(a_, 4)*std::pow(b_, 4)*c_*p[2] - 2*std::pow(a_, 4)*std::pow(b_, 2)*c_*std::pow(p[1], 2) + 2*std::pow(a_, 2)*std::pow(b_, 4)*c_*std::pow(p[0], 2);
 
@@ -152,6 +157,6 @@ std::ostream& G4HalfHyperbolicParaboloid::StreamInfo(std::ostream& os) const
 
 G4SurfaceMeshCGAL* G4HalfHyperbolicParaboloid::GetSurfaceMesh()
 {
-    G4HalfQuadric hp = this->GetQuadric();
-    return make_mesh(hp, 2.5*2.5*m*m);
+    G4HalfQuadric quadric = this->GetQuadric();
+    return make_mesh(quadric, 5*5*m*2m);
 }
