@@ -46,7 +46,9 @@ G4double G4HalfSphere::DistanceToSurface(const G4ThreeVector &p, const G4ThreeVe
 
 G4double G4HalfSphere::DistanceToSurface(const G4ThreeVector &p) const
 {
-    return (p - centre_).mag() - radius_;
+    const G4ThreeVector q = p - centre_;
+
+    return sqrt(q.dot(q)) - radius_;
 }
 
 void G4HalfSphere::GetExtent(G4ThreeVector &maxBounds, G4ThreeVector &minBounds, const G4ThreeVector &boundLimit) const
