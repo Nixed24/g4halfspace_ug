@@ -5,6 +5,10 @@
 #include "G4HalfQuadric.hh"
 #include "G4SurfaceMeshCGAL.hh"
 
+#include <CGAL/Polygon_mesh_processing/border.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
+
+
 FT_GT sphere_function (Point_3_GT p) {
   const FT_GT x2=p.x()*p.x(), y2=p.y()*p.y(), z2=p.z()*p.z();
   return x2+y2+z2-1000*1000;
@@ -34,7 +38,24 @@ G4SurfaceMeshCGAL* make_mesh(G4HalfQuadric &quadric, double sphere_size) {
 
   Surface_mesh_3 *sm = new Surface_mesh_3();
   CGAL::facets_in_complex_2_to_triangle_mesh(c2t3, *sm);
-  G4cout << "G4ImplicitSufaceCGAL Final number of points: " << tr.number_of_vertices() << "\n";
+    G4cout << "G4ImplicitSufaceCGAL Final number of points: " << tr.number_of_vertices() << "\n";
+
+// Written by copilot, meant to clip infinite quadrics
+  // Produces a mirror of the mesh which are the clipping triangles
+  std::vector<Surface_mesh_3::Halfedge_index> boundaryHalfedges;
+
+  PMP::extract_boundary_cycles(
+      *sm,
+      std::back_inserter(boundaryHalfedges));
+
+  for (const auto halfedge : boundaryHalfedges) {
+    std::vector<Surface_mesh_3::Face_index> patchFaces;
+
+    PMP::triangulate_hole(
+        *sm,
+        halfedge,
+        std::back_inserter(patchFaces));
+  }
 
   // get mesh point, offset by normal and evaluate implicit function
   Surface_mesh_3::Face_index face_index;
