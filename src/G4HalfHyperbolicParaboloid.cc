@@ -158,5 +158,6 @@ std::ostream& G4HalfHyperbolicParaboloid::StreamInfo(std::ostream& os) const
 G4SurfaceMeshCGAL* G4HalfHyperbolicParaboloid::GetSurfaceMesh()
 {
     G4HalfQuadric quadric = this->GetQuadric();
-    return make_mesh(quadric, 5*5*m*2m);
+
+    return make_mesh(quadric, 1e9*1e9);
 }

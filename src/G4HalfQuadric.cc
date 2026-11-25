@@ -615,7 +615,5 @@ G4SurfaceMeshCGAL* G4HalfQuadric::GetSurfaceMesh() {
 
   G4cout << "G4HalfQuadric::GetSurfaceMesh" << std::endl;
 
-
-  // mesh quadric mesh
-  return make_mesh(*this, 3000*3000);
+  return make_mesh(*this, 1e9*1e9);
 }
