@@ -599,9 +599,12 @@ G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
 {
   std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
   std::vector<G4double> candidate_distances;
+
+  const G4double sign = this->Inside(p) == kInside ? -1 : 1;
+
   for (const auto& candidate_point : candidate_points) // oh cool, copilot generated this
   {
-    candidate_distances.push_back((candidate_point - p).mag());
+    candidate_distances.push_back(sign*(candidate_point - p).mag());
   }
   const auto min_distance = std::min_element(candidate_distances.begin(), candidate_distances.end());
   return *min_distance;

@@ -116,7 +116,7 @@ std::vector<G4double> G4PolynomialSolve::SolvePolynomial(const std::vector<G4dou
     std::vector<G4double> coefficients_copy = coefficients;
     while (coefficients_copy.size() > 0 && coefficients_copy.front() == 0.0)
     {
-      coefficients_copy.pop_back(); // Remove leading zeroes
+      coefficients_copy.erase(coefficients_copy.begin()); // Remove leading zeroes
     }
     if (coefficients_copy.size() == 0)
     {
