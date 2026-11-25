@@ -4,8 +4,6 @@
 #include "G4HalfPlane.hh"
 #include "G4VGraphicsScene.hh"
 #include "G4VoxelLimits.hh"
-#include "G4BoundingEnvelope.hh"
-#include "G4SystemOfUnits.hh"
 
 const G4ThreeVector ORIGIN = {0,0,0};
 
@@ -79,7 +77,7 @@ void G4HalfIntersectionSolid::GetPotentialRayIntersections(const G4ThreeVector& 
             if (keepOnlySolidHits && this->Inside(intersection) != kSurface) continue;
 
             const G4double distance = (intersection - p).dot(vUnit);
-            if (distance < -kCarTolerance) continue;
+            if (distance < -kCarTolerance) continue; // Keep only forward-ray intersectionsinside
 
             RayHit hit;
             hit.intersection = intersection;
@@ -105,7 +103,18 @@ void G4HalfIntersectionSolid::GetPotentialRayIntersections(const G4ThreeVector& 
         });
 }
 
+void G4HalfIntersectionSolid::SetDistance(G4double &distance, G4int &normSign, const G4ThreeVector &p,
+    const G4HalfSurface &surface, G4HalfSurface &candidateSurface, const G4int &sign)
+{
+    G4double candidateDistance = surface.DistanceToSurface(p);
 
+    if (sign*candidateDistance < distance)
+    {
+        distance = candidateDistance;
+        candidateSurface = surface;
+        normSign = sign;
+    }
+}
 
 G4double G4HalfIntersectionSolid::SignedDistance(const G4ThreeVector& p, G4ThreeVector *n, const G4bool calcNorm) const
 {
@@ -126,11 +135,13 @@ G4double G4HalfIntersectionSolid::SignedDistance(const G4ThreeVector& p, G4Three
 
     for (const auto &surface : intersectionSurfaces_)
     {
+        //SetDistance(signedDistance, normSign, p, *surface, *candidateSurface,  +1);
         setDistance(surface, +1);
     }
 
     for (const auto &surface : subtractionSurfaces_)
     {
+        //SetDistance(signedDistance, normSign, p, *surface, *candidateSurface,  -1);
         setDistance(surface, -1);
     }
 
