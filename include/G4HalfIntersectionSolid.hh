@@ -17,6 +17,8 @@ class G4HalfIntersectionSolid : public G4HalfSolid
 protected:
     void GetOnSurfaceNormal(const G4ThreeVector& p, G4ThreeVector& normal) const override;
 
+    static void SetDistance(G4double &distance, G4int &normSign, const G4ThreeVector &p,
+        const G4HalfSurface &surface, G4HalfSurface &candidateSurface, const G4int &sign);
 public:
     using G4HalfSolid::DistanceToIn;
     using G4HalfSolid::DistanceToOut;

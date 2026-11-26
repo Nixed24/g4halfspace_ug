@@ -637,6 +637,27 @@ pow(a,2)*pow(e,2)*i*pow(r_z,2)-2*a*pow(b,2)*e*i*pow(r_z,2)+pow(b,4)*i*pow(r_z,2)
 
     candidate_point.set(x_component, y_component, z_component);
     candidate_points.push_back(candidate_point);
-  }
   return candidate_points;
+  }
+G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
+{
+  std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
+  std::vector<G4double> candidate_distances;
+
+  const G4double sign = this->Inside(p) == kInside ? -1 : 1;
+
+  for (const auto& candidate_point : candidate_points) // oh cool, copilot generated this
+  {
+    candidate_distances.push_back(sign*(candidate_point - p).mag());
+  }
+  const auto min_distance = std::min_element(candidate_distances.begin(), candidate_distances.end());
+  return *min_distance;
+}
+
+G4SurfaceMeshCGAL* G4HalfQuadric::GetSurfaceMesh() {
+
+
+  G4cout << "G4HalfQuadric::GetSurfaceMesh" << std::endl;
+
+  return make_mesh(*this, 1e9*1e9);
 }

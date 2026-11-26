@@ -44,19 +44,22 @@ void G4HalfIntersectionSolid::AddSubtractionSurface(G4HalfSurface *surface)
 
 G4double G4HalfIntersectionSolid::ImplicitFunction(const G4ThreeVector &p) const
 {
-    G4double implicitFunction = -kInfinity;
+    G4double intersectionImplicitFunction = -kInfinity;
+    G4double subtractionImplicitFunction = -kInfinity;
 
     for (const auto &s : intersectionSurfaces_)
     {
-        implicitFunction = std::max(implicitFunction, s->ImplicitFunction(p));
+        intersectionImplicitFunction = std::max(intersectionImplicitFunction, s->ImplicitFunction(p));
     }
 
     for (const auto &s : subtractionSurfaces_)
     {
-        implicitFunction = std::max(implicitFunction, -s->ImplicitFunction(p));
+        subtractionImplicitFunction = std::max(subtractionImplicitFunction, s->ImplicitFunction(p));
     }
 
-    return implicitFunction;
+    if (subtractionSurfaces_.empty()) subtractionImplicitFunction = kInfinity;
+
+    return std::max(intersectionImplicitFunction, -subtractionImplicitFunction);
 }
 
 
@@ -73,9 +76,12 @@ void G4HalfIntersectionSolid::GetPotentialRayIntersections(const G4ThreeVector& 
         {
             if (keepOnlySolidHits && this->Inside(intersection) != kSurface) continue;
 
+            const G4double distance = (intersection - p).dot(vUnit);
+            if (distance < -kCarTolerance) continue; // Keep only forward-ray intersectionsinside
+
             RayHit hit;
             hit.intersection = intersection;
-            hit.distance = (intersection - p).dot(vUnit);
+            hit.distance = std::max(0.0, distance);
             hit.targetSurface = surface;
             hit.isSubtraction = subtraction;
 
@@ -97,7 +103,18 @@ void G4HalfIntersectionSolid::GetPotentialRayIntersections(const G4ThreeVector& 
         });
 }
 
+void G4HalfIntersectionSolid::SetDistance(G4double &distance, G4int &normSign, const G4ThreeVector &p,
+    const G4HalfSurface &surface, G4HalfSurface &candidateSurface, const G4int &sign)
+{
+    G4double candidateDistance = surface.DistanceToSurface(p);
 
+    if (sign*candidateDistance < distance)
+    {
+        distance = candidateDistance;
+        candidateSurface = surface;
+        normSign = sign;
+    }
+}
 
 G4double G4HalfIntersectionSolid::SignedDistance(const G4ThreeVector& p, G4ThreeVector *n, const G4bool calcNorm) const
 {
@@ -118,11 +135,13 @@ G4double G4HalfIntersectionSolid::SignedDistance(const G4ThreeVector& p, G4Three
 
     for (const auto &surface : intersectionSurfaces_)
     {
+        //SetDistance(signedDistance, normSign, p, *surface, *candidateSurface,  +1);
         setDistance(surface, +1);
     }
 
     for (const auto &surface : subtractionSurfaces_)
     {
+        //SetDistance(signedDistance, normSign, p, *surface, *candidateSurface,  -1);
         setDistance(surface, -1);
     }
 
@@ -233,33 +252,42 @@ G4SurfaceMeshCGAL* G4HalfIntersectionSolid::GetSurfaceMesh() {
 
     G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh" << G4endl;
     G4bool first = true;
-    auto sm1 = new G4SurfaceMeshCGAL();
+    auto intersectionMesh = new G4SurfaceMeshCGAL();
+    auto subtractionMesh = new G4SurfaceMeshCGAL();
+    auto sm = new G4SurfaceMeshCGAL();
+    G4bool valid;
     for(const auto &s : intersectionSurfaces_) {
         if (first)
         {
-            sm1 = s->GetSurfaceMesh();
+            intersectionMesh = s->GetSurfaceMesh();
             first = false;
+            continue;
         }
-        auto sm2 = s->GetSurfaceMesh();
-        G4bool valid;
-        sm1 = sm1->Intersection(sm2, valid);
+        auto intersectionMesh2 = s->GetSurfaceMesh();
+        intersectionMesh = intersectionMesh->Intersection(intersectionMesh2, valid);
         //G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-intersection facets = " << sm1->NumberOfFaces() << G4endl;
         //G4cout << "valid variable output : " << valid << G4endl;
     }
+    first = true;
     for(const auto &s : subtractionSurfaces_) {
         if (first)
         {
-            sm1 = s->GetSurfaceMesh();
+            subtractionMesh = s->GetSurfaceMesh();
             first = false;
+            continue;
         }
-        auto sm2 = s->GetSurfaceMesh();
-        G4bool valid;
-        sm1 = sm1->Subtraction(sm2, valid);
-        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-subtraction facets = " << sm1->NumberOfFaces() << G4endl;
+        auto subtractionMesh2 = s->GetSurfaceMesh();
+        subtractionMesh = subtractionMesh->Intersection(subtractionMesh2, valid);
+        G4cout << "G4HalfIntersectionSolid::GetSurfaceMesh post-subtraction facets = " << subtractionMesh->NumberOfFaces() << G4endl;
         G4cout << "valid variable output : " << valid << G4endl;
     }
 
-    return sm1;
+    if (subtractionSurfaces_.empty())
+        return intersectionMesh;
+
+    sm = intersectionMesh->Subtraction(subtractionMesh, valid);
+
+    return sm;
 
 }
 

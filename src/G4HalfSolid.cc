@@ -120,7 +120,7 @@ G4ThreeVector G4HalfSolid::SurfaceNormal(const G4ThreeVector& p) const
 
     if (this->Inside(p) == kOutside) this->DistanceToIn(p, true, &normal);
 
-    if (this->Inside(p) == kSurface) GetOnSurfaceNormal(p, normal);
+    if (this->Inside(p) == kSurface) this->GetOnSurfaceNormal(p, normal);
 
     return normal;
 }
