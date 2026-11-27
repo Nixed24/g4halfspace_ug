@@ -12,6 +12,26 @@ G4HalfPlane::G4HalfPlane(const G4ThreeVector& normalIn, const G4double& distance
             :normal(normalIn.unit()),
              distance(distanceIn) {}
 
+void G4HalfPlane::set_normal(const G4ThreeVector& n)
+{
+    if (n.mag() == 0)
+    {
+        G4cerr << "G4HalfPlane::set_normal: Normal vector has zero magnitude. Ignoring." << G4endl;
+    }
+    this->normal = n;
+}
+void G4HalfPlane::set_distance(G4double d)
+{
+    distance = d;
+}
+G4ThreeVector G4HalfPlane::get_normal() const
+{
+    return this->normal;
+}
+G4double G4HalfPlane::get_distance() const
+{
+    return this->distance;
+}
 
 G4double G4HalfPlane::ImplicitFunction(const G4ThreeVector& p) const
 {
