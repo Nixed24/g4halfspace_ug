@@ -19,7 +19,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   const TopoDS_Shape cadShape = G4CADLoader().Load(fCADFilename);
   std::size_t topologyNodeCount = 0;
   G4CADTopology(cadShape).Traverse(
-      [&topologyNodeCount](const TopoDS_Shape&, std::size_t) {
+      [&topologyNodeCount](const TopoDS_Shape& shape, std::size_t) {
+          shape.DumpJson(G4cout);
+          G4cout << G4endl << G4endl;
         ++topologyNodeCount;
       });
   G4cout << "Loaded CAD topology with " << topologyNodeCount << " nodes"
@@ -36,7 +38,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // CAD-derived solids will be placed here once the geometry conversion
   // classes are available.
   auto* placeholderSolid =
-      new G4Box("CADPlaceholder", 0.5 * m, 0.5 * m, 0.5 * m);
+      new G4Box("CADPlaceholder", 2 * m, 2 * m, 2 * m);
   auto* placeholderLogical = new G4LogicalVolume(
       placeholderSolid, nist->FindOrBuildMaterial("G4_Al"), "CADPlaceholder");
   new G4PVPlacement(nullptr, G4ThreeVector(), placeholderLogical,

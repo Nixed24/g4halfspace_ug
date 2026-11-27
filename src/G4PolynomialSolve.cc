@@ -99,11 +99,11 @@ std::vector<G4double> G4PolynomialSolve::SolvePolynomial(const std::vector<G4dou
     G4complex x_2 = x_0 - (two * radical_2);
     G4complex x_3 = x_0 - (two * radical_1) - (two * radical_2);
     G4complex * pure_roots[4] = {&x_0, &x_1, &x_2, &x_3};
-    for (auto it = std::begin(pure_roots); it != std::end(pure_roots); ++it)
+    for (auto & pure_root : pure_roots)
     {
-      if ((*it)->imag() == 0)
+      if (pure_root->imag() == 0)
       {
-        roots.push_back((*it)->real());
+        roots.push_back(pure_root->real());
       }
     }
     return roots;
@@ -114,11 +114,11 @@ std::vector<G4double> G4PolynomialSolve::SolvePolynomial(const std::vector<G4dou
     G4JTPolynomialSolver solver;
     // i wrote this bit
     std::vector<G4double> coefficients_copy = coefficients;
-    while (coefficients_copy.size() > 0 && coefficients_copy.front() == 0.0)
+    while (coefficients_copy.empty() && coefficients_copy.front() == 0.0)
     {
       coefficients_copy.erase(coefficients_copy.begin()); // Remove leading zeroes
     }
-    if (coefficients_copy.size() == 0)
+    if (coefficients_copy.empty())
     {
       return roots; // No roots for a zero polynomial
     }

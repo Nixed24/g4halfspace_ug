@@ -10,6 +10,12 @@ class G4HalfPlane : public G4HalfSurface
     G4double distance;
 
 public:
+
+    void set_normal(const G4ThreeVector& n);
+    void set_distance(G4double d);
+    G4ThreeVector get_normal() const;
+    G4double get_distance() const;
+
     G4HalfPlane(const G4ThreeVector& normal, const G4double& distance);
 
     G4double ImplicitFunction(const G4ThreeVector& p) const override;

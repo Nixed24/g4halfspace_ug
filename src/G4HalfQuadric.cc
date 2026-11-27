@@ -16,7 +16,336 @@ G4HalfQuadric::G4HalfQuadric(const CLHEP::HepMatrix& Q, const CLHEP::HepVector& 
   this->set_P(P);
   this->set_R(R);
 }
+G4HalfQuadric::G4HalfQuadric(double qxx, double qxy, double qxz,
+                          double qyy, double qyz,
+                                      double qzz,
+              double px, double py, double pz,
+              double R)
+{
+  CLHEP::HepMatrix q(3,3);
+  q[0][0] = qxx; q[0][1] = qxy; q[0][2] = qxz;
+  q[1][0] = qxy; q[1][1] = qyy; q[1][2] = qyz;
+  q[2][0] = qxz; q[2][1] = qyz; q[2][2] = qzz;
 
+  CLHEP::HepVector p(3);
+  p[0] = px; p[1] = py; p[2] = pz;
+
+  this->set_Q(q);
+  this->set_P(p);
+  this->set_R(R);
+}
+
+G4RotationMatrix G4HalfQuadric::_transpose(const G4RotationMatrix & M)
+{
+  G4RotationMatrix M_T;
+  M_T.set(M.rowX(), M.rowY(), M.rowZ()); // set columns to rows
+  return M_T;
+}
+CLHEP::HepMatrix G4HalfQuadric::get_Q() const
+{
+  return this->Q;
+}
+CLHEP::HepVector G4HalfQuadric::get_P() const
+{
+  return this->P;
+}
+G4double G4HalfQuadric::get_R() const
+{
+  return this->R;
+}
+void G4HalfQuadric::set_Q(const CLHEP::HepMatrix& new_Q)
+{
+  this->Q = new_Q;
+}
+void G4HalfQuadric::set_P(const CLHEP::HepVector& new_P)
+{
+  this->P = new_P;
+}
+void G4HalfQuadric::set_R(G4double new_R)
+{
+  this->R = new_R;
+}
+
+G4double G4HalfQuadric::ImplicitFunction(const G4ThreeVector& p) const
+{
+  // x_T Q x + P dot x + R
+  // P is a Hep3Vector, Q is a HepRotation/RotationMatrix
+  CLHEP::HepVector casted_point(3);
+  casted_point[0] = p.x();
+  casted_point[1] = p.y();
+  casted_point[2] = p.z();
+  G4double x_T_Q_x = dot((casted_point.T() * this->Q).T(), casted_point);
+  G4double P_x = dot(casted_point, this->P);
+  return x_T_Q_x + P_x + this->R;
+}
+
+std::vector<G4ThreeVector> G4HalfQuadric::RayIntersection(const G4ThreeVector& p, const G4ThreeVector& v) const
+{
+  if (this->Inside(p) == kSurface)
+  {
+    return std::vector<G4ThreeVector> {p};
+  }
+  // G4ThreeVector doesn't have a transpose op and I want to avoid type confusion
+  // So I'm gonna use HepVector internally
+  // a = v_T Q v
+    CLHEP::HepVector casted_point(3);
+    casted_point[0] = p.x();
+    casted_point[1] = p.y();
+    casted_point[2] = p.z();
+    CLHEP::HepVector casted_v(3);
+    casted_v[0] = v.x();
+    casted_v[1] = v.y();
+    casted_v[2] = v.z();
+    // row vector * column vector multiplication is NOT supported by CLHEP
+    // So I have to do this transpose math hack
+    G4double a = dot((casted_v.T() * this->Q).T(), casted_v);
+  if (a == 0) // avoid div by zero when solving -- probably an exotic case
+  {
+    return std::vector<G4ThreeVector> {p};
+  }
+  // b = 2 v_T Q p + v * P
+  G4double b = 2 * dot((casted_v.T() * this->Q).T(), casted_point) + dot(casted_v, P);
+  // c = p_T Q p + p*P + R
+  G4double c = dot((casted_point.T() * this->Q).T(), casted_point) + dot(casted_point, P) + this->R;
+
+  const std::vector<G4double> coefficients {a,b,c};
+  std::vector<G4ThreeVector> intersections;
+  const G4PolynomialSolve polysolve;
+  const std::vector<G4double> v_multipliers = polysolve.SolvePolynomial(coefficients);
+  for (double v_multiplier : v_multipliers)
+  {
+    intersections.push_back(p + v_multiplier * v);
+  }
+  return intersections;
+}
+G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p, const G4ThreeVector& v) const
+{
+  std::vector<G4ThreeVector> intersections = this->RayIntersection(p,v);
+  std::vector<G4double> distances;
+  for (const auto& intersection : intersections)
+  {
+    distances.push_back((intersection - p).mag());
+  }
+  return *(std::min_element(distances.begin(), distances.end()));
+}
+
+G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) const
+{
+  G4cout << Q << G4endl;
+
+  Eigen::Matrix3d q;
+  q << Q(1,1), Q(1,2), Q(1,3),
+       Q(2,1), Q(2,2), Q(2,3),
+       Q(3,1), Q(3,2), Q(3,3);
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(q);
+
+  if (solver.info() != Eigen::Success)
+    throw std::runtime_error("G4HalfQuadric::GetRotationMatrix: Eigenvalue calculation failed.");
+
+  Eigen::Vector3d eigenvalues = solver.eigenvalues().real();
+  Eigen::Matrix3d eigenvectors = solver.eigenvectors().real();
+
+  QEigenvalues.set(eigenvalues[0], eigenvalues[1], eigenvalues[2]);
+
+  if (eigenvectors.determinant() < 0)
+  {
+    const Eigen::Vector3d DValues(-1, 1, 1);
+    const Eigen::Matrix3d D = DValues.asDiagonal();
+    eigenvectors *= D;
+  }
+
+  G4cout << "Calculated Eigenvalues: " << eigenvalues << G4endl;
+  G4cout << "Calculated Eigenvectors: " << eigenvectors << G4endl;
+
+  G4RotationMatrix rotation(
+    CLHEP::Hep3Vector(eigenvectors(0,0), eigenvectors(0,1), eigenvectors(0,2)),
+    CLHEP::Hep3Vector(eigenvectors(1,0), eigenvectors(1,1), eigenvectors(1,2)),
+    CLHEP::Hep3Vector(eigenvectors(2,0), eigenvectors(2,1), eigenvectors(2,2))
+    );
+
+  return rotation;
+}
+
+G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
+  Eigen::Matrix4d M;
+  Eigen::Matrix3d eQ;
+  M << Q(0,0), Q(0,1), Q(0,2), P[0],
+       Q(1,0), Q(1,1), Q(1,2), P[1],
+       Q(2,0), Q(2,1), Q(2,2), P[2],
+       P[0], P[1], P[2], R;
+  eQ << Q(0,0), Q(0,1), Q(0,2),
+        Q(1,0), Q(1,1), Q(1,2),
+        Q(2,0), Q(2,1), Q(2,2);
+
+  Eigen::FullPivLU<Eigen::Matrix4d> M_decomp(M);
+  Eigen::FullPivLU<Eigen::Matrix3d> Q_decomp(eQ);
+
+  G4long rankM = M_decomp.rank();
+  G4long rankQ = Q_decomp.rank();
+
+  G4double Mdet = M.determinant();
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> Msolver(M);
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> Qsolver(eQ);
+
+  if (Msolver.info() != Eigen::Success || Qsolver.info() != Eigen::Success)
+  {
+    throw std::runtime_error("G4HalfQuadric::QuadricType: Eigenvalue calculation failed.");
+  }
+
+  // Maybe sort these
+  const Eigen::Vector4d &Meigenvalues = Msolver.eigenvalues();
+  const Eigen::Vector3d &Qeigenvalues = Qsolver.eigenvalues();
+
+  // SSEQ/M : Same Sign Eigenvalues Q/M
+  G4bool SSEQ = Qeigenvalues.cwiseAbs() == Qeigenvalues || Qeigenvalues.cwiseAbs() == -Qeigenvalues;
+  G4bool SSEM = Meigenvalues.cwiseAbs() == Meigenvalues || Meigenvalues.cwiseAbs() == -Meigenvalues;
+
+  if (rankM == 1) return kCoincidentPlanes;
+  if (rankM == 2 && rankQ == 1 && !SSEM) return kParabolicCylinder;
+  if (rankM == 2 && rankQ == 2 && !SSEM && !SSEQ) return kIntersectingPlanes;
+  if (rankM == 3 && rankQ == 1 && !SSEM) return kParabolicCylinder;
+  if (rankM == 3 && rankQ == 2 && !SSEM && SSEQ) return kEllipticCylinder;
+  if (rankM == 3 && rankQ == 3 && !SSEM && !SSEQ) return kQuadricCone;
+  if (rankM == 4 && rankQ == 2 && Mdet > 0 && !SSEM && !SSEQ) return kEllipticParaboloid;
+  if (rankM == 4 && rankQ == 2 && Mdet < 0 && !SSEM && SSEQ) return kHyperbolicParaboloid;
+  if (rankM == 4 && rankQ == 3 && Mdet > 0 && !SSEM && !SSEQ) return kHyperboloidOneSheet;
+  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && !SSEQ) return kHyperboloidTwoSheets;
+  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && SSEQ) return kEllipsoid;
+
+  throw std::logic_error("G4HalfQuadric::IdentifyQuadric: Cannot identify quadric type, quadric form is invalid.");
+}
+
+void G4HalfQuadric::GetExtent(G4ThreeVector& maxBounds,
+                                    G4ThreeVector& minBounds,
+                                    const G4ThreeVector& boundLimit) const
+{
+  // All currently under the assumption that the eigenvalues are in order of x, y, z
+  const G4int quadricType = this->IdentifyQuadricType();
+  G4ThreeVector eigenvalues;
+
+  const G4RotationMatrix rotationMatrix = this->GetRotationMatrix(eigenvalues);
+
+  G4double xBound;
+  G4double yBound;
+  switch (quadricType)
+  {
+    case kEllipsoid:
+      // Bounds are +/- 1/sqrt(eigenvalue)
+      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), 1/sqrt(eigenvalues[2])};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kEllipticParaboloid:
+      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), boundLimit[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kHyperboloidOneSheet:
+      // z eigenValue should be < 0 so this shouldn't break
+      xBound = (1/sqrt(eigenvalues[0]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      yBound = (1/sqrt(eigenvalues[1]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      maxBounds = {xBound, yBound, maxBounds[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    case kHyperboloidTwoSheets:
+      xBound = (1/sqrt(eigenvalues[0]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      yBound = (1/sqrt(eigenvalues[1]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
+      maxBounds = {xBound, yBound, maxBounds[2]};
+      maxBounds = rotationMatrix*maxBounds;
+      minBounds = -maxBounds;
+      break;
+
+    default:
+      G4cout << "Unbounded quadric type, settting boudn to world limits." << G4endl;
+      maxBounds = boundLimit;
+      minBounds = -boundLimit;
+  }
+}
+
+std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
+{
+    os << "--- Half Surface Quadric ---" << std::endl;
+    return os;
+}
+
+G4ThreeVector G4HalfQuadric::SurfaceNormal(const G4ThreeVector& p) const
+{
+  CLHEP::HepVector g(3);
+  g = 2 * this->Q * g;
+  G4ThreeVector grad {g[0], g[1], g[2]};
+  return grad;
+}
+G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
+{
+  const std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
+  if (candidate_points.empty())
+  {
+    return {};
+  }
+  std::vector<G4double> distances;
+  for (const auto& candidate_point : candidate_points)
+  {
+    distances.push_back((candidate_point - p).mag());
+  }
+  const auto min_distance = std::min_element(distances.begin(), distances.end());
+  const long element_index = std::distance(distances.begin(), min_distance);
+  return candidate_points[element_index];
+}
+
+G4HalfSurface* G4HalfQuadric::Transform(const G4AffineTransform& t)
+{
+  G4RotationMatrix rotate = t.NetRotation(); // M_ij
+  G4ThreeVector translate = t.NetTranslation(); // T_j
+  CLHEP::HepMatrix rotate_cast(3,3);
+  CLHEP::HepVector translate_cast(3);
+  for (auto i : {0,1,2})
+  {
+    translate_cast[i] = translate[i];
+    for (auto j : {0,1,2})
+    {
+      rotate_cast[i][j] = rotate[i][j];
+    }
+  }
+  // this is the vector that the ORIGIN moves by, if a minus sign is missed then that is because the translation is of the object and not its occupied space.
+
+  CLHEP::HepMatrix Q_prime = rotate_cast.T() * this->Q * rotate_cast;
+  CLHEP::HepVector P_prime = 2 * (rotate_cast.T() * this->Q * translate_cast) + (rotate_cast.T() * (this->P));
+  G4double R_prime = dot(this->P, translate_cast) + dot(this->Q.T() * translate_cast, translate_cast) + this->R; // was missing this->R
+
+  return new G4HalfQuadric(Q_prime, P_prime, R_prime);
+}
+
+G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
+{
+  std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
+  if (candidate_points.empty())
+  {
+    return {};
+  }
+  std::vector<G4double> candidate_distances;
+  for (const auto& candidate_point : candidate_points) // oh cool, copilot generated this
+  {
+    candidate_distances.push_back((candidate_point - p).mag());
+  }
+  const auto min_distance = std::min_element(candidate_distances.begin(), candidate_distances.end());
+  return *min_distance;
+}
+
+G4SurfaceMeshCGAL* G4HalfQuadric::GetSurfaceMesh() {
+
+
+  G4cout << "G4HalfQuadric::GetSurfaceMesh" << std::endl;
+
+
+  // mesh quadric mesh
+  return make_mesh(*this, 3000*3000);
+}
 
 std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4ThreeVector& p) const
 {
@@ -32,7 +361,6 @@ std::vector<G4ThreeVector> G4HalfQuadric::GetLMContourIntersections(const G4Thre
   // Z -> lambda (lagrange multiplier)
   // const G4double characteristic_determinant = (-pow(Z,3)*a*e*i)+pow(Z,2)*e*i+pow(Z,3)*pow(b,2)*i+pow(Z,2)*a*i-Z*i+pow(Z,3)*a*pow(f,2)-pow(Z,2)*pow(f,2)-2*pow(Z,3)*b*c*f+pow(Z,3)*pow(c,2)*e+pow(Z,2)*a*e-Z*e-pow(Z,2)*pow(c,2)-pow(Z,2)*pow(b,2)-Z*a+1;
   // It's a LONG expression
-  // (DONE) 07/11/26 these terms aren't correct; pull the correct ones from poly_redo_test_demo; that also uses b (P/2) instead of P
   const G4double power_6 =
 (-a*pow(b_x,2)*pow(e,2)*pow(i,2))+M_0*pow(a,2)*pow(e,2)*pow(i,2)-pow(a,2)*pow(b_y,2)*e*pow(i,2)+2*a*b*b_x*b_y*e*pow(i,2)
                          +pow(b,2)*pow(b_x,2)*e*pow(i,2)-2*M_0*a*pow(b,2)*e*pow(i,2)+a*pow(b,2)*pow(b_y,2)*pow(i,2)
@@ -309,292 +637,8 @@ pow(a,2)*pow(e,2)*i*pow(r_z,2)-2*a*pow(b,2)*e*i*pow(r_z,2)+pow(b,4)*i*pow(r_z,2)
 
     candidate_point.set(x_component, y_component, z_component);
     candidate_points.push_back(candidate_point);
-  }
   return candidate_points;
-}
-
-G4RotationMatrix G4HalfQuadric::_transpose(const G4RotationMatrix & M)
-{
-  G4RotationMatrix M_T;
-  M_T.set(M.rowX(), M.rowY(), M.rowZ()); // set columns to rows
-  return M_T;
-}
-CLHEP::HepMatrix G4HalfQuadric::get_Q() const
-{
-  return this->Q;
-}
-CLHEP::HepVector G4HalfQuadric::get_P() const
-{
-  return this->P;
-}
-G4double G4HalfQuadric::get_R() const
-{
-  return this->R;
-}
-void G4HalfQuadric::set_Q(const CLHEP::HepMatrix& new_Q)
-{
-  this->Q = new_Q;
-}
-void G4HalfQuadric::set_P(const CLHEP::HepVector& new_P)
-{
-  this->P = new_P;
-}
-void G4HalfQuadric::set_R(G4double new_R)
-{
-  this->R = new_R;
-}
-
-G4double G4HalfQuadric::ImplicitFunction(const G4ThreeVector& p) const
-{
-  // x_T Q x + P dot x + R
-  // P is a Hep3Vector, Q is a HepRotation/RotationMatrix
-  CLHEP::HepVector casted_point(3);
-  casted_point[0] = p.x();
-  casted_point[1] = p.y();
-  casted_point[2] = p.z();
-  G4double x_T_Q_x = dot((casted_point.T() * this->Q).T(), casted_point);
-  G4double P_x = dot(casted_point, this->P);
-  return x_T_Q_x + P_x + this->R;
-}
-
-std::vector<G4ThreeVector> G4HalfQuadric::RayIntersection(const G4ThreeVector& p, const G4ThreeVector& v) const
-{
-  if (this->Inside(p) == kSurface)
-  {
-    return std::vector<G4ThreeVector> {p};
   }
-  // G4ThreeVector doesn't have a transpose op and I want to avoid type confusion
-  // So I'm gonna use HepVector internally
-  // a = v_T Q v
-    CLHEP::HepVector casted_point(3);
-    casted_point[0] = p.x();
-    casted_point[1] = p.y();
-    casted_point[2] = p.z();
-    CLHEP::HepVector casted_v(3);
-    casted_v[0] = v.x();
-    casted_v[1] = v.y();
-    casted_v[2] = v.z();
-    // row vector * column vector multiplication is NOT supported by CLHEP
-    // So I have to do this transpose math hack
-    G4double a = dot((casted_v.T() * this->Q).T(), casted_v);
-  if (a == 0) // avoid div by zero when solving -- probably an exotic case
-  {
-    return std::vector<G4ThreeVector> {p};
-  }
-  // b = 2 v_T Q p + v * P
-  G4double b = 2 * dot((casted_v.T() * this->Q).T(), casted_point) + dot(casted_v, P);
-  // c = p_T Q p + p*P + R
-  G4double c = dot((casted_point.T() * this->Q).T(), casted_point) + dot(casted_point, P) + this->R;
-
-  const std::vector<G4double> coefficients {a,b,c};
-  std::vector<G4ThreeVector> intersections;
-  const G4PolynomialSolve polysolve;
-  const std::vector<G4double> v_multipliers = polysolve.SolvePolynomial(coefficients);
-  for (double v_multiplier : v_multipliers)
-  {
-    intersections.push_back(p + v_multiplier * v);
-  }
-  return intersections;
-}
-G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p, const G4ThreeVector& v) const
-{
-  std::vector<G4ThreeVector> intersections = this->RayIntersection(p,v);
-  std::vector<G4double> distances;
-  for (const auto& intersection : intersections)
-  {
-    distances.push_back((intersection - p).mag());
-  }
-  return *(std::min_element(distances.begin(), distances.end()));
-}
-
-G4RotationMatrix G4HalfQuadric::GetRotationMatrix(G4ThreeVector &QEigenvalues) const
-{
-  G4cout << Q << G4endl;
-
-  Eigen::Matrix3d q;
-  q << Q(1,1), Q(1,2), Q(1,3),
-       Q(2,1), Q(2,2), Q(2,3),
-       Q(3,1), Q(3,2), Q(3,3);
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(q);
-
-  if (solver.info() != Eigen::Success)
-    throw std::runtime_error("G4HalfQuadric::GetRotationMatrix: Eigenvalue calculation failed.");
-
-  Eigen::Vector3d eigenvalues = solver.eigenvalues().real();
-  Eigen::Matrix3d eigenvectors = solver.eigenvectors().real();
-
-  QEigenvalues.set(eigenvalues[0], eigenvalues[1], eigenvalues[2]);
-
-  if (eigenvectors.determinant() < 0)
-  {
-    const Eigen::Vector3d DValues(-1, 1, 1);
-    const Eigen::Matrix3d D = DValues.asDiagonal();
-    eigenvectors *= D;
-  }
-
-  G4cout << "Calculated Eigenvalues: " << eigenvalues << G4endl;
-  G4cout << "Calculated Eigenvectors: " << eigenvectors << G4endl;
-
-  G4RotationMatrix rotation(
-    CLHEP::Hep3Vector(eigenvectors(0,0), eigenvectors(0,1), eigenvectors(0,2)),
-    CLHEP::Hep3Vector(eigenvectors(1,0), eigenvectors(1,1), eigenvectors(1,2)),
-    CLHEP::Hep3Vector(eigenvectors(2,0), eigenvectors(2,1), eigenvectors(2,2))
-    );
-
-  return rotation;
-}
-
-G4HalfQuadric::QuadricType G4HalfQuadric::IdentifyQuadricType() const {
-  Eigen::Matrix4d M;
-  Eigen::Matrix3d eQ;
-  M << Q(0,0), Q(0,1), Q(0,2), P[0],
-       Q(1,0), Q(1,1), Q(1,2), P[1],
-       Q(2,0), Q(2,1), Q(2,2), P[2],
-       P[0], P[1], P[2], R;
-  eQ << Q(0,0), Q(0,1), Q(0,2),
-        Q(1,0), Q(1,1), Q(1,2),
-        Q(2,0), Q(2,1), Q(2,2);
-
-  Eigen::FullPivLU<Eigen::Matrix4d> M_decomp(M);
-  Eigen::FullPivLU<Eigen::Matrix3d> Q_decomp(eQ);
-
-  G4long rankM = M_decomp.rank();
-  G4long rankQ = Q_decomp.rank();
-
-  G4double Mdet = M.determinant();
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> Msolver(M);
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> Qsolver(eQ);
-
-  if (Msolver.info() != Eigen::Success || Qsolver.info() != Eigen::Success)
-  {
-    throw std::runtime_error("G4HalfQuadric::QuadricType: Eigenvalue calculation failed.");
-  }
-
-  // Maybe sort these
-  const Eigen::Vector4d &Meigenvalues = Msolver.eigenvalues();
-  const Eigen::Vector3d &Qeigenvalues = Qsolver.eigenvalues();
-
-  // SSEQ/M : Same Sign Eigenvalues Q/M
-  G4bool SSEQ = Qeigenvalues.cwiseAbs() == Qeigenvalues || Qeigenvalues.cwiseAbs() == -Qeigenvalues;
-  G4bool SSEM = Meigenvalues.cwiseAbs() == Meigenvalues || Meigenvalues.cwiseAbs() == -Meigenvalues;
-
-  if (rankM == 1) return kCoincidentPlanes;
-  if (rankM == 2 && rankQ == 1 && !SSEM) return kParabolicCylinder;
-  if (rankM == 2 && rankQ == 2 && !SSEM && !SSEQ) return kIntersectingPlanes;
-  if (rankM == 3 && rankQ == 1 && !SSEM) return kParabolicCylinder;
-  if (rankM == 3 && rankQ == 2 && !SSEM && SSEQ) return kEllipticCylinder;
-  if (rankM == 3 && rankQ == 3 && !SSEM && !SSEQ) return kQuadricCone;
-  if (rankM == 4 && rankQ == 2 && Mdet > 0 && !SSEM && !SSEQ) return kEllipticParaboloid;
-  if (rankM == 4 && rankQ == 2 && Mdet < 0 && !SSEM && SSEQ) return kHyperbolicParaboloid;
-  if (rankM == 4 && rankQ == 3 && Mdet > 0 && !SSEM && !SSEQ) return kHyperboloidOneSheet;
-  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && !SSEQ) return kHyperboloidTwoSheets;
-  if (rankM == 4 && rankQ == 3 && Mdet < 0 && !SSEM && SSEQ) return kEllipsoid;
-
-  throw std::logic_error("G4HalfQuadric::IdentifyQuadric: Cannot identify quadric type, quadric form is invalid.");
-}
-
-void G4HalfQuadric::GetExtent(G4ThreeVector& maxBounds,
-                                    G4ThreeVector& minBounds,
-                                    const G4ThreeVector& boundLimit) const
-{
-  // All currently under the assumption that the eigenvalues are in order of x, y, z
-  const G4int quadricType = this->IdentifyQuadricType();
-  G4ThreeVector eigenvalues;
-
-  const G4RotationMatrix rotationMatrix = this->GetRotationMatrix(eigenvalues);
-
-  G4double xBound;
-  G4double yBound;
-  switch (quadricType)
-  {
-    case kEllipsoid:
-      // Bounds are +/- 1/sqrt(eigenvalue)
-      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), 1/sqrt(eigenvalues[2])};
-      maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds;
-      break;
-
-    case kEllipticParaboloid:
-      maxBounds = {1/sqrt(eigenvalues[0]), 1/sqrt(eigenvalues[1]), boundLimit[2]};
-      maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds; 
-      break;
-
-    case kHyperboloidOneSheet:
-      // z eigenValue should be < 0 so this shouldn't break
-      xBound = (1/sqrt(eigenvalues[0]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
-      yBound = (1/sqrt(eigenvalues[1]))*sqrt(-1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
-      maxBounds = {xBound, yBound, maxBounds[2]};
-      maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds;
-      break;
-
-    case kHyperboloidTwoSheets:
-      xBound = (1/sqrt(eigenvalues[0]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
-      yBound = (1/sqrt(eigenvalues[1]))*sqrt(1 - maxBounds[2]*maxBounds[2]*eigenvalues[2]);
-      maxBounds = {xBound, yBound, maxBounds[2]};
-      maxBounds = rotationMatrix*maxBounds;
-      minBounds = -maxBounds;
-      break;
-
-    default:
-      G4cout << "Unbounded quadric type, settting boudn to world limits." << G4endl;
-      maxBounds = boundLimit;
-      minBounds = -boundLimit;
-  }
-}
-
-std::ostream& G4HalfQuadric::StreamInfo(std::ostream& os) const
-{
-    os << "--- Half Surface Quadric ---" << std::endl;
-    return os;
-}
-
-G4ThreeVector G4HalfQuadric::SurfaceNormal(const G4ThreeVector& p) const
-{
-  CLHEP::HepVector g(3);
-  g = 2 * this->Q * g;
-  G4ThreeVector grad {g[0], g[1], g[2]};
-  return grad;
-}
-G4ThreeVector G4HalfQuadric::ClosestSurfacePoint(const G4ThreeVector& p) const
-{
-  const std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);
-  std::vector<G4double> distances;
-  for (const auto& candidate_point : candidate_points)
-  {
-    distances.push_back((candidate_point - p).mag());
-  }
-  const auto min_distance = std::min_element(distances.begin(), distances.end());
-  const long element_index = std::distance(distances.begin(), min_distance);
-  return candidate_points[element_index];
-}
-
-G4HalfSurface* G4HalfQuadric::Transform(const G4AffineTransform& t)
-{
-  G4RotationMatrix rotate = t.NetRotation(); // M_ij
-  G4ThreeVector translate = t.NetTranslation(); // T_j
-  CLHEP::HepMatrix rotate_cast(3,3);
-  CLHEP::HepVector translate_cast(3);
-  for (auto i : {0,1,2})
-  {
-    translate_cast[i] = translate[i];
-    for (auto j : {0,1,2})
-    {
-      rotate_cast[i][j] = rotate[i][j];
-    }
-  }
-  // this is the vector that the ORIGIN moves by, if a minus sign is missed then that is because the translation is of the object and not its occupied space.
-
-  CLHEP::HepMatrix Q_prime = rotate_cast.T() * this->Q * rotate_cast;
-  CLHEP::HepVector P_prime = 2 * (rotate_cast.T() * this->Q * translate_cast) + (rotate_cast.T() * (this->P));
-  G4double R_prime = dot(this->P, translate_cast) + dot(this->Q.T() * translate_cast, translate_cast) + this->R; // was missing this->R
-
-  return new G4HalfQuadric(Q_prime, P_prime, R_prime);
-}
-
 G4double G4HalfQuadric::DistanceToSurface(const G4ThreeVector& p) const
 {
   std::vector<G4ThreeVector> candidate_points = GetLMContourIntersections(p);

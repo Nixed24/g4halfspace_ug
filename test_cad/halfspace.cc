@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 
   auto* runManager = G4RunManagerFactory::CreateRunManager();
 
-  const G4String cadFilename = argc > 1 ? argv[1] : "model.step";
+  const G4String cadFilename = argc > 1 ? argv[1] : "cad_files/cube_of_cube_skew.step";
   runManager->SetUserInitialization(new DetectorConstruction(cadFilename));
   runManager->SetUserInitialization(new ActionInitialization);
   runManager->SetUserInitialization(new FTFP_BERT);
